@@ -45,6 +45,10 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 # Clone repo
 git clone https://github.com/AminaAzzmouri/skillfolio-frontend.git
 
+
+# Navigate into project folder
+cd skillfolio-frontend
+
 # Install dependencies
 npm install
 
