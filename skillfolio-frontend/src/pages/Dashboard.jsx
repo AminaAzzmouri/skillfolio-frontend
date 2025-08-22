@@ -1,4 +1,11 @@
+import { useAppStore } from "../store/useAppStore";
+
 export default function Dashboard() {
+  const certificates = useAppStore((s) => s.certificates);
+  const projects = useAppStore((s) => s.projects);
+  const goalProgress = 0; // Week 4: compute from backend goals
+
+  // ... render counts using certificates.length / projects.length
   return (
     <div className="flex min-h-screen bg-background text-text">
       {/* Sidebar */}
@@ -16,19 +23,22 @@ export default function Dashboard() {
         <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-background/70 p-4 rounded">Total Certificates: 0</div>
-          <div className="bg-background/70 p-4 rounded">Total Projects: 0</div>
-          <div className="bg-background/70 p-4 rounded">Goal Progress: 0%</div>
+          <div className="bg-background/70 p-4 rounded">Total Certificates: {certificates.length}</div>
+          <div className="bg-background/70 p-4 rounded">Total Projects: {projects.length}</div>
+          <div className="bg-background/70 p-4 rounded">Goal Progress: {goalProgress}%</div>
         </div>
 
         <div className="bg-background/70 p-4 rounded">
           <h2 className="font-heading mb-2">Recent Certificates</h2>
-          <ul>
-            <li>Certificate 1</li>
-            <li>Certificate 2</li>
+          <ul> {certificates.map((c, i) => (
+            <li key={i}>{c.title}</li>
+            ))}
           </ul>
         </div>
       </main>
     </div>
   );
 }
+
+
+
