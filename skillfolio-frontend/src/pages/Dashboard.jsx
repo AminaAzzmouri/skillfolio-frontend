@@ -1,4 +1,5 @@
 import { useAppStore } from "../store/useAppStore";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const certificates = useAppStore((s) => s.certificates);
@@ -12,8 +13,8 @@ export default function Dashboard() {
       <aside className="w-64 bg-background/90 p-4 border-r border-gray-700 hidden md:block">
         <h2 className="font-heading text-xl mb-6">Dashboard</h2>
         <ul className="flex flex-col gap-3">
-          <li>Certificates</li>
-          <li>Projects</li>
+          <li><Link to="/certificates">Certificates</Link></li>
+          <li><Link to="/Projects">Projects</Link></li>
           <li>Profile</li>
         </ul>
       </aside>

@@ -6,6 +6,7 @@ const fallbackId = () => Math.random().toString(36).slice(2);
 export const useAppStore = create((set, get) => ({
   certificates: [],
   projects: [],
+  
   addCertificate: (payload) =>
     set((s) => ({ certificates: [...s.certificates, { id: (nanoid?.() || fallbackId()), ...payload }] })),
   addProject: (payload) =>
