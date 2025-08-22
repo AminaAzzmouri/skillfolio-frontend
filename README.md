@@ -171,3 +171,11 @@ npm install react-router-dom
   - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
   - Current Status: Form saves to global store; list renders beneath the form.
   - Next Steps: Replace with backend POST/GET and real file uploads in Week 4.
+
+---
+
+- **feature/add-project**:
+
+  - Purpose: Let users capture projects and optionally link them to certificates.
+  - Current Status: Form + list powered by store; certificate linking supported.
+  - Next Steps: Persist to backend and show guided questions in Week 4.
