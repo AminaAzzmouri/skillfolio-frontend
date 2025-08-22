@@ -16,7 +16,7 @@ export const useAppStore = create((set, get) => ({
   // auth --
   user: null, // {email} when logged in
 
-  login: async ({email, password) => {
+  login: async ({email, password }) => {
     // Mock success if both fields provided
     if (!email || !password) throw new Error("Mising credentials");
     const user = { email };
