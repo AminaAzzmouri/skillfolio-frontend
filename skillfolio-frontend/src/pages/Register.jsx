@@ -2,18 +2,23 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 
 export default function Register() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", confirm: "" });
+  const [error, setError] = useState("");
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // Day 3: mock only — just log. Week 4: replace with axios POST /api/auth/login
-    console.log("Login submit", form);
+    if (form.password !== form.confirm) {
+      setError("Passwords do not match");
+      return;
+    }
+    setError("");
+    console.log("Register submit", { email: form.email }); // Day 3 mock
   };
 
   return (
     <div className="min-h-screen bg-background text-text flex items-center justify-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-md bg-background/80 p-6 rounded-xl border border-gray-700">
-        <h1 className="font-heading text-2xl mb-6 text-center">Log in to Skillfolio</h1>
+        <h1 className="font-heading text-2xl mb-6 text-center">Create your Skillfolio account</h1>
 
         <label className="block text-sm mb-2">Email</label>
         <input
@@ -31,14 +36,26 @@ export default function Register() {
           required
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="w-full mb-6 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
-          placeholder="••••••••"
+          className="w-full mb-4 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
+          placeholder="Create a password"
         />
 
-        <button className="w-full bg-primary hover:bg-primary/80 transition rounded p-3 font-semibold">Log In</button>
+        <label className="block text-sm mb-2">Confirm password</label>
+        <input
+          type="password"
+          required
+          value={form.confirm}
+          onChange={(e) => setForm({ ...form, confirm: e.target.value })}
+          className="w-full mb-2 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
+          placeholder="Re-enter your password"
+        />
+
+        {error && <p className="text-sm text-accent mb-2">{error}</p>}
+
+        <button className="w-full bg-primary hover:bg-primary/80 transition rounded p-3 font-semibold">Sign Up</button>
 
         <p className="text-sm mt-4 text-center">
-          No account? <Link className="text-secondary hover:underline" to="/register">Create one</Link>
+          Already have an account? <Link className="text-secondary hover:underline" to="/login">Log in</Link>
         </p>
       </form>
     </div>
