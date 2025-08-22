@@ -156,3 +156,18 @@ npm install react-router-dom
   - Current Status: Two pages created, basic validation, ready to integrate with backend JWT in Week 4.
   - Next Steps: Replace console.log with axios calls to /auth endpoints.
 
+---
+
+- **feature/state-management**:
+
+  - Purpose: Introduce a tiny global store (Zustand) to hold mock certificates & projects until backend integration.
+  - Current Status: addCertificate/addProject actions available, arrays stored in memory.
+  - Next Steps: Replace with API calls and persist auth token in Week 4.
+
+---
+
+- **feature/add-certificates**:
+
+  - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
+  - Current Status: Form saves to global store; list renders beneath the form.
+  - Next Steps: Replace with backend POST/GET and real file uploads in Week 4.
