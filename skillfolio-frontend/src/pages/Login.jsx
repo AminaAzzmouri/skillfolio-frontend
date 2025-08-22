@@ -6,8 +6,7 @@ export default function Login() {
 
   const onSubmit = (e) => {
     e.preventDefault();
-    // Day 3: mock only — just log. Week 4: replace with axios POST /api/auth/login
-    console.log("Login submit", form);
+    console.log("Login submit", form); // Day 3 mock
   };
 
   return (
