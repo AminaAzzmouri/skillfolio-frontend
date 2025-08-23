@@ -1,18 +1,25 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppStore } from "../store/useAppStore";
 
 export default function Register() {
   const [form, setForm] = useState({ email: "", password: "", confirm: "" });
   const [error, setError] = useState("");
+  const register = useAppStore((s) => s.register);
+  const navigate = useNavigate();
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirm) {
       setError("Passwords do not match");
       return;
     }
-    setError("");
-    console.log("Register submit", { email: form.email }); // Day 3 mock
+    try {
+      await register({ email: form.email, password: form.password }); // mock
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message || "Registration failed");
+    }
   };
 
   return (
@@ -61,3 +68,4 @@ export default function Register() {
     </div>
   );
 }
+

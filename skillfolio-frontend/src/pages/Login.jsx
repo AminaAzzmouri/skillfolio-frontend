@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppStore } from "../store/useAppStore";
+
 
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
+  const login = useAppStore((s) => s.login);
+  const navigate = useNavigate();
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login submit", form); // Day 3 mock
+    try {
+      await login(form);         // mock auth
+      navigate("/dashboard");    // go to dashboard
+    } catch (err) {
+      setError(err.message || "Login failed");
+    }
   };
-
   return (
     <div className="min-h-screen bg-background text-text flex items-center justify-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-md bg-background/80 p-6 rounded-xl border border-gray-700">
@@ -30,9 +39,11 @@ export default function Login() {
           required
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
-          className="w-full mb-6 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
+          className="w-full mb-2 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
           placeholder="••••••••"
         />
+
+        {error && <p className="text-sm text-accent mb-2">{error}</p>}
 
         <button className="w-full bg-primary hover:bg-primary/80 transition rounded p-3 font-semibold">Log In</button>
 
