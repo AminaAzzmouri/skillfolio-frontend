@@ -98,6 +98,8 @@ npm install react-router-dom
     - Created src/components/Navbar.jsx with links (Home, Dashboard, Login, Register)
     - Scaffolded placeholder pages in src/pages (LandingPage, Dashboard, Login, Register)
 
+  - Key files: src/main.jsx, src/App.jsx, src/components/Navbar.jsx, src/pages/*
+
   - Next Steps:
 
     - Merge, then build the hero section in feature/landing-page
@@ -119,6 +121,8 @@ npm install react-router-dom
       - Two CTA buttons: **Sign Up** → `/register`, **Log In** → `/login`
     - Applied Tailwind styling for a dark-sleek vibe (using custom theme colors + fonts)
     - Fully responsive (mobile-first design with centered layout)
+
+  - Key files: src/pages/LandingPage.jsx
 
   - Next Steps:
 
@@ -143,6 +147,8 @@ npm install react-router-dom
     - Styled using the dark-sleek theme tokens (background, text, etc.)
     - Responsive design → Sidebar hidden on small screens, content remains accessible
 
+  - Key files: src/pages/Dashboard.jsx
+
   - Next Steps:
     - Add a collapsible mobile sidebar (later branch: `feature/dashboard-mobile`)
     - Connect dashboard stats to backend once APIs are ready
@@ -154,6 +160,7 @@ npm install react-router-dom
 
   - Purpose: Implement Login & Register pages with styled forms (mock submit for now).
   - Current Status: Two pages created, basic validation, ready to integrate with backend JWT in Week 4.
+  - Key files: src/pages/Login.jsx, src/pages/Register.jsx, src/components/ProtectedRoute.jsx
   - Next Steps: Replace console.log with axios calls to /auth endpoints.
 
 ---
@@ -162,6 +169,7 @@ npm install react-router-dom
 
   - Purpose: Introduce a tiny global store (Zustand) to hold mock certificates & projects until backend integration.
   - Current Status: addCertificate/addProject actions available, arrays stored in memory.
+  - Key files: src/store/useAppStore.js
   - Next Steps: Replace with API calls and persist auth token in Week 4.
 
 ---
@@ -170,6 +178,7 @@ npm install react-router-dom
 
   - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
   - Current Status: Form saves to global store; list renders beneath the form.
+  - Key files (planned): src/pages/Certificates.jsx, src/components/forms/CertificateForm.jsx, route /certificates and /certificates/new
   - Next Steps: Replace with backend POST/GET and real file uploads in Week 4.
 
 ---
@@ -178,4 +187,5 @@ npm install react-router-dom
 
   - Purpose: Let users capture projects and optionally link them to certificates.
   - Current Status: Form + list powered by store; certificate linking supported.
+  - Key files (planned): src/pages/Projects.jsx, src/components/forms/ProjectForm.jsx, route /projects and /projects/new
   - Next Steps: Persist to backend and show guided questions in Week 4.
