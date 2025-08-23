@@ -46,7 +46,6 @@
   - Add branding/logo for stronger identity.
   - Animate hero text/buttons for improved UX.
   - Display sample screenshots or features below the hero section.
- 
 */
 
 import { Link } from "react-router-dom";
