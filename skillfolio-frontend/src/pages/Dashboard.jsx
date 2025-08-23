@@ -1,100 +1,24 @@
-/*
-  Dashboard.jsx
+/* Docs: see docs/components/Dashboard.jsx.md */
 
-  Purpose:
-  ================================================================================
-
-  This component serves as the **main authenticated area** of the Skillfolio app. 
-  Once logged in, users land here to view their overall progress, achievements, and 
-  quick access to certificates, projects, and profile-related features.
-
-  ================================================================================
-
-  Structure:
-  ================================================================================
-
-  Layout:
-    - **Sidebar (left side)**: 
-        • Navigation links → Certificates, Projects, Profile
-        • Visible on medium screens and above (hidden on small screens).
-    
-    - **Main content (right side)**:
-        • Welcome header
-        • Statistics section:
-            → Displays total certificates (from store)
-            → Displays total projects (from store)
-            → Displays goal progress (static placeholder for now, dynamic later)
-        • Recent Certificates section:
-            → Shows the most recently added certificates (from mock store state).
-
-  Styling:
-    - Uses Tailwind’s custom theme (dark background, light text).
-    - Grid layout for statistics (responsive for small/large screens).
-    - Rounded cards with subtle background for UI clarity.
-
-  ================================================================================
-
-  State Management:
-  ================================================================================
-
-  - Pulls data directly from the global Zustand store (`useAppStore`).
-    → certificates: Array of certificates with { title, id }
-    → projects: Array of projects with { title, id }
-  - Dynamic counts (certificates.length, projects.length) update instantly 
-    as new data is added via store actions.
-
-  ================================================================================
-
-  Routing:
-  ================================================================================
-
-  - Uses React Router’s <Link> for client-side navigation.
-    → “Certificates” → /certificates
-    → “Projects”    → /projects
-    → “Profile”     → reserved for future profile page
-
-  ================================================================================
-
-  Role in Project:
-  ================================================================================
-
-  The dashboard is the **central hub** for the user’s learning journey. 
-  It consolidates certificate tracking, project management, and goal progress 
-  into one interface, allowing users to quickly gauge their skill-building activity.
-
-  ================================================================================
-
-  Future Enhancements:
-  ================================================================================
-
-  - Add chart visualizations for project/certificate progress.
-  - Implement goal progress calculation (link with backend).
-  - Mobile sidebar (hamburger menu toggle).
-  - Certificates and projects lists → clickable, leading to detailed views.
-*/
-
-
-import { useAppStore } from "../store/useAppStore";
+import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const certificates = useAppStore((s) => s.certificates);
   const projects = useAppStore((s) => s.projects);
-  const goalProgress = 0; // Week 4: compute from backend goals
+  const goalProgress = 0;
 
-  // ... render counts using certificates.length / projects.length
   return (
     <div className="flex min-h-screen bg-background text-text">
-      {/* Sidebar */}
       <aside className="w-64 bg-background/90 p-4 border-r border-gray-700 hidden md:block">
         <h2 className="font-heading text-xl mb-6">Dashboard</h2>
         <ul className="flex flex-col gap-3">
           <li><Link to="/certificates">Certificates</Link></li>
-          <li><Link to="/Projects">Projects</Link></li>
+          <li><Link to="/projects">Projects</Link></li>
           <li>Profile</li>
         </ul>
       </aside>
-
+      
       {/* Main content */}
       <main className="flex-1 p-6">
         <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
@@ -107,8 +31,9 @@ export default function Dashboard() {
 
         <div className="bg-background/70 p-4 rounded">
           <h2 className="font-heading mb-2">Recent Certificates</h2>
-          <ul> {certificates.map((c, i) => (
-            <li key={i}>{c.title}</li>
+          <ul>
+            {certificates.map((c) => (
+              <li key={c.id}>{c.title}</li>
             ))}
           </ul>
         </div>
@@ -116,6 +41,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-
-

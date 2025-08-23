@@ -69,6 +69,13 @@ npm install react-router-dom
 
 ---
 
+## 📅 Project Timeline
+
+- [components & pages](skillfolio-frontend/docs//components/*)
+- [Global State (Zustand)](skillfolio-frontend/docs//state)
+
+---
+
 ## Branches Strategy:
 
 - **chore/react-setup**:
