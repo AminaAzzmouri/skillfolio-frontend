@@ -82,6 +82,8 @@ npm install react-router-dom
     - Custom theme tokens (primary, secondary, background, text, accent) + fonts (Roboto / Roboto Mono) in tailwind.config.js
     - Dev server runs with npm run dev
 
+  - Key files: tailwind.config.js, postcss.config.js, index.html
+
   - Next Steps: Keep this branch limited to tooling/config changes only (future chores go to new chore/\* branches).
 
 ---
