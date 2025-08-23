@@ -49,7 +49,6 @@
   - Add global state providers here (e.g., Zustand persist middleware, context).  
   - Integrate a ThemeProvider or internationalization provider if needed.  
   - Potentially configure error boundaries or suspense loaders for smoother UX.  
-
 */
 
 
