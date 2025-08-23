@@ -6,6 +6,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Certificates from "./pages/Certificates.jsx";
 import Projects from "./pages/Projects.jsx";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/certificates" element={<Certificates />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       </Routes>
     </>
   );
