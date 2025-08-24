@@ -4,7 +4,7 @@
 import { create } from "zustand";
 import { api, setAuthToken } from "../lib/api";
 
-// Fallback id if crypto.randomUUID is unavailable
+// Fallback id if crypto.randomUUID is unavailable (kept for local demo adders)
 const rid = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
@@ -12,7 +12,7 @@ const rid = () =>
 
 export const useAppStore = create((set, get) => ({
   // -----------------------
-  // Certificates (API-backed)
+  // Lists (Certificates API-backed, Projects still local for now)
   // -----------------------
   certificates: [],
   certificatesLoading: false,
@@ -40,9 +40,50 @@ export const useAppStore = create((set, get) => ({
     return { created: true, email, meta: data };
   },
 
+  // Login → POST /api/auth/login/ (Django expects username for default User)
+  async login({ email, password }) {
+    if (!email || !password) throw new Error("Missing credentials");
+    const { data } = await api.post("/api/auth/login/", {
+      username: email, // important: backend expects "username"
+      password,
+    });
+    const { access, refresh } = data;
+    const user = { email };
+
+    // Set axios default auth header
+    setAuthToken(access);
+
+    // Persist to store + localStorage
+    set({ user, access, refresh });
+    localStorage.setItem("sf_user", JSON.stringify({ user, access, refresh }));
+    return user;
+  },
+
+  // Logout → clear memory + storage + axios header
+  logout() {
+    setAuthToken(null);
+    set({ user: null, access: null, refresh: null });
+    localStorage.removeItem("sf_user");
+  },
+
+  // Restore session on reload; always mark bootstrapped at the end
+  restoreUser() {
+    try {
+      const raw = localStorage.getItem("sf_user");
+      if (raw) {
+        const { user, access, refresh } = JSON.parse(raw);
+        set({ user, access, refresh });
+        if (access) setAuthToken(access);
+      }
+    } finally {
+      set({ bootstrapped: true });
+    }
+  },  
+
+  // ----------------------------------------------------
+  // Certificates (LIVE API)
   // ----------------------------------------------------
   // Fetch all certificates (GET /api/certificates/)
-  // ----------------------------------------------------
   async fetchCertificates() {
     set({ certificatesLoading: true, certificatesError: null });
     try {
@@ -86,49 +127,11 @@ export const useAppStore = create((set, get) => ({
     return data;
   },
 
-  // Login → POST /api/auth/login/ (Django expects username for default User)
-  async login({ email, password }) {
-    if (!email || !password) throw new Error("Missing credentials");
-    const { data } = await api.post("/api/auth/login/", {
-      username: email,
-      password,
-    });
-    const { access, refresh } = data;
-    const user = { email };
-
-    // Set axios default auth header
-    setAuthToken(access);
-
-    // Persist to store + localStorage
-    set({ user, access, refresh });
-    localStorage.setItem("sf_user", JSON.stringify({ user, access, refresh }));
-    return user;
-  },
-
-  // Logout → clear memory + storage + axios header
-  logout() {
-    setAuthToken(null);
-    set({ user: null, access: null, refresh: null });
-    localStorage.removeItem("sf_user");
-  },
-
-  // Restore session on reload; always mark bootstrapped at the end
-  restoreUser() {
-    try {
-      const raw = localStorage.getItem("sf_user");
-      if (raw) {
-        const { user, access, refresh } = JSON.parse(raw);
-        set({ user, access, refresh });
-        if (access) setAuthToken(access);
-      }
-    } finally {
-      set({ bootstrapped: true });
-    }
-  },
-
   // -----------------------
   // Local adders (still useful for UI testing)
   // -----------------------
+  
+  // (Optional) keep local adder for quick UI testing of Certificates
   addCertificate(payload) {
     set((s) => ({
       certificates: [...s.certificates, { id: rid(), ...payload }],
