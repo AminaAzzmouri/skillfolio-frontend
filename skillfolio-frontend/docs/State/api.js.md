@@ -8,7 +8,7 @@ It centralizes the base URL and authentication header logic so that all API
 requests share the same configuration.
 
 By abstracting this into a single file, components and store actions can simply
-import `api` or `setAuthToken` without worrying about low-level details.
+import `api` or `setAuthToken` without worrying about low-level details.  
 
 ## Structure
 ================================================================================
