@@ -1,11 +1,21 @@
 /* Docs: see docs/components/Dashboard.jsx.md */
 
+import { useEffect } from "react";
 import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
+
 
 export default function Dashboard() {
   const certificates = useAppStore((s) => s.certificates);
   const projects = useAppStore((s) => s.projects);
+  const fetchCertificates = useAppStore((s) => s.fetchCertificates);
+
+  useEffect(() => {
+
+    // Load certificates so counts are real
+    fetchCertificates();
+  }, [fetchCertificates]);
+
   const goalProgress = 0;
 
   return (

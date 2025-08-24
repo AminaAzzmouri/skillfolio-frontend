@@ -1,3 +1,5 @@
+/* Docs: see docs/state/api.js.md */
+
 // Tiny axios instance to talk to Django API
 import axios from "axios";
 
