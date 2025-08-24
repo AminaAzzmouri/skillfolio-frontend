@@ -7,30 +7,49 @@
   Its job is to ensure that only authenticated users (those with a valid `user` 
   state in the global store) can access certain routes — like the dashboard.  
 
-  If the user is not logged in, they are redirected to the **./login** page.  
-  If authenticated, the protected child components are rendered.
+  It also waits for the app to finish **restoring a session**
+  from localStorage (bootstrapping) before deciding whether to redirect or render.
 
   ================================================================================
 
   ## How it Works:
   ================================================================================
 
-  - Uses `useAppStore` (Zustand) to read the current `user` object from global state.
-  - If `user` is `null` or missing → returns `<Navigate to="/login" replace />`, 
-    which automatically redirects to the login page.
-  - If `user` exists → simply renders the `children` components that were wrapped 
-    inside `<ProtectedRoute>`.
+  - Reads two values from the global Zustand store:
+    • `user`: the current authenticated user (or `null` if logged out)
+    • `bootstrapped`: `true` after `restoreUser()` has run at least once on app load
+    
+  - **Bootstrapping guard:**  
+    • If `bootstrapped === false`, it renders a minimal “Loading…” screen.  
+    • This prevents a flash redirect to `/login` while the app is still restoring a session.
+  
+  - **Auth guard:**  
+    • Once bootstrapped, if `user` is missing → redirects to `/login` (`<Navigate replace />`).  
+    • If `user` exists → renders the protected `children`.
+
+
+  #### Pseudocode:
+  ------------------------------------------------------------------------------
+
+  if (!bootstrapped) {
+    render "Loading..." 
+    } 
+    else if (!user) {
+      redirect to /login 
+      } 
+      else {
+        render children
+        }
 
   #### Example usage in `App.jsx`:
   ------------------------------------------------------------------------------
-  <Route
-    path="/dashboard"
-    element={
-      <ProtectedRoute>
-        <Dashboard />
-      </ProtectedRoute>
-    }
-  />
+  import ProtectedRoute from "./components/ProtectedRoute";
+
+  <Routes>
+    <Route path="/" element={<LandingPage />} />
+    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+  </Routes>
+
   ------------------------------------------------------------------------------
 
   ================================================================================
@@ -40,16 +59,18 @@
 
   - Prevents unauthenticated users from directly accessing private pages 
     via URL typing (e.g., `/dashboard`).
-  - Acts as a **first layer of client-side protection** until backend-based 
-    authentication/authorization is implemented in Week 4.
+  - Works hand-in-hand with:
+    • useAppStore.restoreUser() (sets bootstrapped when done)
+    • Navbar’s logout() (which clears auth state and token)
+  - Provides a clean UX with a tiny loading state during session restoration.
 
   ================================================================================
 
-  ## Future Enhancements:
+  ## Notes & Extensibility:
   ================================================================================
 
-  - Replace mock auth state with real JWT tokens from the backend.
-  - Add logic to verify token validity (e.g., expired tokens → redirect to login).
-  - Extend functionality to role-based routes (e.g., admin-only pages).
-  - Optionally display a "loading" state if authentication is being restored 
-    from localStorage or backend.
+  - JWT awareness: The guard relies on user state (which is set after a successful JWT login).
+  - If you add token expiry checks later, you can verify/refresh tokens before rendering children.
+  - Role-based routing: You can extend the guard to check roles/permissions and redirect accordingly.
+  - Custom loading UI: Replace the inline “Loading…” div with a skeleton/spinner component if desired.
+

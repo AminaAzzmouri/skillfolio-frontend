@@ -34,14 +34,14 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 ## 📅 Project Timeline
 
 - Week 3: Project setup + basic layout (Landing + Auth pages)
-- Week 4: Dashboard + forms for certificates/projects
-- Week 5: Styling, polish, integration with backend
+- Week 4: Dashboard + forms for certificates/projects + backend integration (auth working end-to-end)
+- Week 5: Styling, polish, integration with backend data (certificates/projects)
 
 ---
 
 ## ⚡ Getting Started
 
-```bash
+==============================================================================
 # Clone repo
 git clone https://github.com/AminaAzzmouri/skillfolio-frontend.git
 
@@ -65,11 +65,17 @@ npm run dev
 
 # Install react-router-dom
 npm install react-router-dom
-```
+
+# Install Zustand for state management
+npm install zustand
+
+# Install Axios for API requests
+npm install axios
+==============================================================================
 
 ---
 
-## 📅 Project Timeline
+## 📅 Documentation
 
 - [components & pages](skillfolio-frontend/docs//components/*)
 - [Global State (Zustand)](skillfolio-frontend/docs//state)
@@ -167,19 +173,44 @@ npm install react-router-dom
 
 - **feature/auth-pages**:
 
-  - Purpose: Implement Login & Register pages with styled forms (mock submit for now).
-  - Current Status: Two pages created, basic validation, ready to integrate with backend JWT in Week 4.
-  - Key files: src/pages/Login.jsx, src/pages/Register.jsx, src/components/ProtectedRoute.jsx
-  - Next Steps: Replace console.log with axios calls to /auth endpoints.
+  - Purpose: Implement Login & Register pages with styled forms connected to backend authentication
+
+  - Current Status: 
+    - Register form sends POST request to /api/auth/register/ (backend Django endpoint).
+    - Login form sends POST request to /api/auth/login/ and stores issued JWT tokens (access & refresh).
+    - Session is persisted via localStorage → users remain logged in after page refresh.
+    - Logout clears tokens and resets app state.
+    - Added <ProtectedRoute> so pages like /dashboard are only accessible when authenticated.
+    - Navbar now dynamically updates to show Login/Register when logged out, and Logout + email when logged in
+
+  - Key files: 
+    - src/pages/Login.jsx 
+    - src/pages/Register.jsx
+    - src/components/ProtectedRoute.jsx
+    - src/components/Navbar.jsx
+    - src/store/useAppStore.js (Zustand auth logic)
+    - src/lib/api.js
+
+  - Next Steps: 
+    - Connect certificates/projects API with backend CRUD.
+    - Handle API error messages more gracefully in UI.
 
 ---
 
 - **feature/state-management**:
 
-  - Purpose: Introduce a tiny global store (Zustand) to hold mock certificates & projects until backend integration.
-  - Current Status: addCertificate/addProject actions available, arrays stored in memory.
+  - Purpose: Global state store using Zustand.
+
+  - Current Status: 
+    - Auth state (user, tokens, session persistence via restoreUser()).
+    - Temporary arrays for certificates/projects (mock).
+    - Local addCertificate / addProject still available for now (will be swapped with API calls).
+  
   - Key files: src/store/useAppStore.js
-  - Next Steps: Replace with API calls and persist auth token in Week 4.
+  
+  - Next Steps: 
+    - Replace mocks with live backend API calls for certificates/projects.
+    - Introduce goal-tracking slice if time allows.
 
 ---
 

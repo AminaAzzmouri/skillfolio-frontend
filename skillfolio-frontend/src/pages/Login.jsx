@@ -13,11 +13,17 @@ export default function Login() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
       await login(form);         // mock auth
       navigate("/dashboard");    // go to dashboard
     } catch (err) {
-      setError(err.message || "Login failed");
+      const detail =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Login failed";
+      setError(detail);
     }
   };
   return (

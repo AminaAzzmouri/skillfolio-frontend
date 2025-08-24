@@ -12,15 +12,23 @@ export default function Register() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (form.password !== form.confirm) {
       setError("Passwords do not match");
       return;
     }
     try {
-      await register({ email: form.email, password: form.password }); // mock
-      navigate("/dashboard");
+      const res = await register({ email: form.email, password: form.password });
+      // success go t login
+      navigate("/login", { state: { msg: "Account created, please log in." }});
     } catch (err) {
-      setError(err.message || "Registration failed");
+      // try to surface server error if present
+      const detail = 
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+      "Registration failed";
+      setError(detail);
     }
   };
 
