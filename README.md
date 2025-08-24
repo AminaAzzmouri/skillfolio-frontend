@@ -3,7 +3,9 @@
 ### 🔹 **Frontend repo (`skillfolio-frontend`) README**
 Focus on React, UI, and user experience.  
 
-```markdown
+
+---
+
 # Skillfolio Frontend
 
 This is the frontend of **Skillfolio**, a web application that helps self-learners archive their certificates, track skills, and connect achievements to projects.  
@@ -19,7 +21,6 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 - Dashboard for managing certificates & achievements
 - Form to describe projects linked to certificates
 - Responsive design (desktop + mobile)
-
 ---
 
 ## 🛠️ Tech Stack
@@ -27,15 +28,15 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 - React (with Vite)
 - Tailwind CSS
 - Zustand (state management)
-- Axios (API requests)
+- Axios (API requests → Django backend)
 
 ---
 
 ## 📅 Project Timeline
 
 - Week 3: Project setup + basic layout (Landing + Auth pages)
-- Week 4: Dashboard + forms for certificates/projects + backend integration (auth working end-to-end)
-- Week 5: Styling, polish, integration with backend data (certificates/projects)
+- Week 4: Dashboard + forms for certificates/projects + backend integration (auth working end-to-end, certificates wired to API)
+- Week 5: Styling, polish, integration with backend data (projects, goals, profile)
 
 ---
 
@@ -73,6 +74,15 @@ npm install zustand
 npm install axios
 ==============================================================================
 
+📌 **Backend setup required**  
+
+Make sure the Django backend is running at `http://127.0.0.1:8000` with these endpoints available:  
+
+- `POST /api/auth/register/`  
+- `POST /api/auth/login/`  
+- `GET /api/certificates/`  
+- `POST /api/certificates/` (supports file upload)
+
 ---
 
 ## 📅 Documentation
@@ -95,7 +105,7 @@ npm install axios
     - Custom theme tokens (primary, secondary, background, text, accent) + fonts (Roboto / Roboto Mono) in tailwind.config.js
     - Dev server runs with npm run dev
 
-  - Key files: tailwind.config.js, postcss.config.js, index.html
+  - Key files: `tailwind.config.js`, `postcss.config.js`, `index.html`
 
   - Next Steps: Keep this branch limited to tooling/config changes only (future chores go to new chore/\* branches).
 
@@ -115,15 +125,12 @@ npm install axios
 
   - Key files: src/main.jsx, src/App.jsx, src/components/Navbar.jsx, src/pages/*
 
-  - Next Steps:
-
-    - Merge, then build the hero section in feature/landing-page
-    - Add mobile hamburger nav later in a small feature/navbar-mobile branch (optional)
+  - Next Steps: Add mobile hamburger nav later in a small feature/navbar-mobile branch (optional)
 
 ---
 
 - **feature/landing-page**:
-
+  
   - Purpose: Build the landing page with hero section and CTAs (Sign Up / Log In).
 
   - Current Status:
@@ -142,7 +149,6 @@ npm install axios
   - Next Steps:
 
     - Polish responsiveness further with optional animations
-    - Merge, then move on to `feature/dashboard` for dashboard skeleton
 
 ---
 
@@ -161,24 +167,24 @@ npm install axios
         - Recent Certificates list (static items for now)
     - Styled using the dark-sleek theme tokens (background, text, etc.)
     - Responsive design → Sidebar hidden on small screens, content remains accessible
+    - Connected dashboard stats to backend API
 
   - Key files: src/pages/Dashboard.jsx
 
   - Next Steps:
     - Add a collapsible mobile sidebar (later branch: `feature/dashboard-mobile`)
-    - Connect dashboard stats to backend once APIs are ready
-    - Replace placeholder certificate list with dynamic data
+    - Feed stats dynamically from backend.  
 
 ---
 
 - **feature/auth-pages**:
 
-  - Purpose: Implement Login & Register pages with styled forms connected to backend authentication
+  - Purpose: Implement Login & Register pages with styled forms connected to backend authentication (Django JWT)
 
   - Current Status: 
-    - Register form sends POST request to /api/auth/register/ (backend Django endpoint).
-    - Login form sends POST request to /api/auth/login/ and stores issued JWT tokens (access & refresh).
-    - Session is persisted via localStorage → users remain logged in after page refresh.
+    - Register form sends POST request to `/api/auth/register/` (backend Django endpoint).
+    - Login form sends POST request to `/api/auth/login/` and stores issued JWT tokens (access & refresh).
+    - Session is persisted via `localStorage` → users remain logged in after page refresh.
     - Logout clears tokens and resets app state.
     - Added <ProtectedRoute> so pages like /dashboard are only accessible when authenticated.
     - Navbar now dynamically updates to show Login/Register when logged out, and Logout + email when logged in
@@ -192,7 +198,6 @@ npm install axios
     - src/lib/api.js
 
   - Next Steps: 
-    - Connect certificates/projects API with backend CRUD.
     - Handle API error messages more gracefully in UI.
 
 ---
@@ -202,30 +207,57 @@ npm install axios
   - Purpose: Global state store using Zustand.
 
   - Current Status: 
-    - Auth state (user, tokens, session persistence via restoreUser()).
-    - Temporary arrays for certificates/projects (mock).
-    - Local addCertificate / addProject still available for now (will be swapped with API calls).
+    - Auth state (user, tokens, session persistence via `restoreUser()){}`.
+    - Certificates/projects slices added  
+    - Local addProject still available for now (will be swapped with API calls).
+    - Bootstrapping mechanism ensures guards wait
   
   - Key files: src/store/useAppStore.js
   
   - Next Steps: 
-    - Replace mocks with live backend API calls for certificates/projects.
-    - Introduce goal-tracking slice if time allows.
+    - Replace mocks with live backend API calls for projects.
 
 ---
 
 - **feature/add-certificates**:
 
   - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
-  - Current Status: Form saves to global store; list renders beneath the form.
-  - Key files (planned): src/pages/Certificates.jsx, src/components/forms/CertificateForm.jsx, route /certificates and /certificates/new
-  - Next Steps: Replace with backend POST/GET and real file uploads in Week 4.
+  
+  - Current Status: 
+    - Certificates list loads from `GET /api/certificates/`  
+    - Add Certificate form sends `POST /api/certificates/` with file upload  
+    - Loading + error states handled in store  
+    - Dashboard certificate count now reflects backend  
+  
+  - Key files (planned): 
+    - `src/pages/Certificates.jsx`  
+    - `src/components/forms/CertificateForm.jsx`  
+    - `src/store/useAppStore.js` (fetchCertificates/createCertificate)  
+  
+  - Next Steps: Add certificate detail page, edit/delete support. 
 
 ---
 
 - **feature/add-project**:
 
   - Purpose: Let users capture projects and optionally link them to certificates.
+  
   - Current Status: Form + list powered by store; certificate linking supported.
-  - Key files (planned): src/pages/Projects.jsx, src/components/forms/ProjectForm.jsx, route /projects and /projects/new
-  - Next Steps: Persist to backend and show guided questions in Week 4.
+  - Key files (planned): 
+    - `src/pages/Projects.jsx`
+    - `src/components/forms/ProjectForm.jsx`
+    - `route /projects`
+    - `/projects/new`
+
+  - Next Steps: Replace with API integration, link projects to certificates & show guided questions
+
+---
+
+- **feature/documentation**:
+
+  - Purpose: 
+  - Key files (planned): 
+    - `README.md`
+    - `skillfolio-frontend/*`
+    - `skillfolio-frontend/docs/components/*`
+    - `skillfolio-frontend/state`

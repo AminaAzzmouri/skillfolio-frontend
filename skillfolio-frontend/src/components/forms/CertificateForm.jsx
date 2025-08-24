@@ -1,3 +1,5 @@
+/* Docs: see docs/components/CertificateForm.jsx.md */
+
 import { useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 
