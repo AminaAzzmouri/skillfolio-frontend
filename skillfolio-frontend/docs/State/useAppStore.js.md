@@ -9,8 +9,8 @@
 
     - Auth (JWT access/refresh, current user, restore on reload, logout),
     - Axios auth header control via setAuthToken,
-    - Certificates integration (load list from API, create with file upload).
-    - Temporary local lists for projects (to be replaced by live API calls next).
+    - Certificates integration (load list from live API, create with optional file upload).
+    - Projects (temporary local list): kept for UI demo; will be API-backed next
 
   This keeps components lean and avoids prop drilling while remaining simpler than heavy state libraries.
 
@@ -21,19 +21,19 @@
 
   ### Data:
 
-    • certificates: [] — list of certificates (now fetched from the backend).
+    • certificates: [] — live list fetched from the backend
     • projects: [] — local, temporary list (UI demo until projects API integration).
-
     • addCertificate(payload): → Adds a new certificate with a generated ID (pushes { id, ...payload } using a robust 
       ID generator (crypto.randomUUID when available, otherwise a random string))
     • addProject(payload): Adds a new project with a unique ID and links optionally to a certificate.
+    • rid() — robust ID generator (prefers crypto.randomUUID, falls back to base-36 string)
 
   ### Authentication State:
 
     • user: null by default; becomes `{ email }` when logged in or registered
     • access: null → JWT access token (used for API calls).
     • refresh: null → JWT refresh token (reserved for future token refresh flow).
-    • bootstrapped: false → flips to true after restoreUser() finishes so route guards can wait before redirecting.
+    • bootstrapped: false initially → flips to true after restoreUser() finishes so route guards can wait before redirecting.
 
   ### Authentication Actions:
 
@@ -47,33 +47,30 @@
       On success:
           - Extracts { access, refresh }
           - Sets Authorization header globally via setAuthToken(access) so all future api (axios) calls are authenticated
-          - Stores { user, access, refresh } in both Zustand and localStorage (sf_user)
+          - Stores { user, access, refresh } in both Zustand and localStorage under sf_user
     
     • logout(): Clears the axios header, resets auth state in the store, and removes sf_user from localStorage.
 
     • restoreUser(): 
-      Reads sf_user from localStorage at app start, restores { user, access, refresh }, and reapplies the axios header if an access token is present.
-      Always sets bootstrapped: true in a finally block so components (e.g., ProtectedRoute) can safely wait for session restoration before deciding to redirect.
+          - Reads sf_user from localStorage at app start
+          - Restores { user, access, refresh } 
+          - Reapplies the axios header if an access token is present.
+          - Always sets bootstrapped: true in a finally block so components (e.g., ProtectedRoute) 
+            can safely wait for session restoration before deciding to redirect.
 
   ### Certificates (API) Actions:
 
     • async fetchCertificates():
           - GET /api/certificates/
           - Populates certificates from server response.
+          - Handles both array response and paginated { results: [...] } gracefully.
 
     • async createCertificate({ title, issuer, date_earned, file })
           - POST /api/certificates/ (multipart)
           - Builds a FormData payload:
                   * title, issuer, date_earned (YYYY-MM-DD)
                   * optional file_upload (PDF/image)
-          - Appends the created certificate to certificates.
-      
-      These replace the earlier mock flow for certificates. Projects will follow in the next branch.
-
-  ### Local demo adders (kept only for UI testing of projects):
-
-    • addProject(payload) — pushes { id, ...payload } to projects using a robust ID generator.
-    • rid() prefers crypto.randomUUID() if available, falling back to a base-36 random string.
+          - On success, prepends the created item to certificates.
 
   ### Axios integration:
 
@@ -86,9 +83,14 @@
   ## How It’s Used in the App:
   =========================================================================================================
 
-  - Login/Register pages call register() then navigate to /login, or call login() then navigate to /dashboard.
-  
+  **Auth flow**:
+
+  - Register → register() → navigate to /login with success message
+  - Login → login() → navigate to /dashboard
+  - Logout → logout() → navigate to /login
   - Navbar can show “Logout” and user email if user is set.
+
+  **Session persistence**:
 
   - ProtectedRoute should read bootstrapped and user:
           • If !bootstrapped → render a small loading placeholder.
@@ -97,7 +99,10 @@
 
   - On app load, call restoreUser() once (e.g., in App.jsx useEffect) to keep users signed in on refresh.
   
-  - Certificates page: call fetchCertificates() on mount, createCertificate() on submit.
+  **Certificates page**: 
+
+          • call fetchCertificates() on mount, 
+          • createCertificate() on submit.
 
   =========================================================================================================
   
@@ -107,17 +112,14 @@
   - Acts as the **single source of truth** for auth and certificate lists
   - Encapsulates JWT handling & anxios header management so pages/component can stay clean
   - Enables a smooth transition from mock lists to real API without refactoring the entire app
-  - We swapped certificates first; projects come next with the same pattern.
+  - (Certificates are live now; Projects will follow the same pattern next)
 
   ================================================================================================
 
   ## Future Enhancements:
   ============================================================================================
 
-  - Replace local list actions with real CRUD (GET/POST/PUT/DELETE) against the backend:
-        ** fetchCertificates(), createCertificate(), fetchProjects(), createProject(), etc.
-
-  - Add projects CRUD: fetchProjects, createProject, update, delete.
+  - Full projects CRUD with API: fetchProjects, createProject, update, delete
   - Token refresh using refresh + /api/auth/refresh/.
   - Introduce loading/error flags per async action for better UX.
   - Add selectors for derived data (e.g., counts for the dashboard).
@@ -147,14 +149,10 @@
 
   • Certificates:
                                 // Load on page mount
-                                useEffect(() => {
-                                useAppStore.getState().fetchCertificates();
-                                }, []);
+                                useEffect(() => { useAppStore.getState().fetchCertificates(); }, []);
                                 
                                 // Create with file
-                                await useAppStore.getState().createCertificate({
-                                title, issuer, date_earned, file, // file optional
-                                });
+                                await useAppStore.getState().createCertificate({ title, issuer, date_earned, file /* optional */ });
 
   ================================================================================================
 

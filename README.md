@@ -1,11 +1,3 @@
----
-
-### 🔹 **Frontend repo (`skillfolio-frontend`) README**
-Focus on React, UI, and user experience.  
-
-
----
-
 # Skillfolio Frontend
 
 This is the frontend of **Skillfolio**, a web application that helps self-learners archive their certificates, track skills, and connect achievements to projects.  
@@ -17,9 +9,9 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 ## 🚀 Features (Planned)
 
 - Landing page (Skillfolio intro + call-to-action)
-- User authentication (login, register, logout)
-- Dashboard for managing certificates & achievements
-- Form to describe projects linked to certificates
+- User authentication (login, register, logout)(✅ wired to backend)
+- Dashboard for managing certificates & achievements (✅ shows real cert count; projects local)
+- Forms to add certificates (✅ live API) and projects (🟨 local for now)
 - Responsive design (desktop + mobile)
 ---
 
@@ -35,7 +27,7 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 ## 📅 Project Timeline
 
 - Week 3: Project setup + basic layout (Landing + Auth pages)
-- Week 4: Dashboard + forms for certificates/projects + backend integration (auth working end-to-end, certificates wired to API)
+- Week 4: Backend integration for auth (JWT) + Certificates API (GET/POST with file upload); keep projects local
 - Week 5: Styling, polish, integration with backend data (projects, goals, profile)
 
 ---
@@ -46,7 +38,7 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 # Clone repo
 git clone https://github.com/AminaAzzmouri/skillfolio-frontend.git
 
-# Create project
+# Create project (If you didn’t scaffold with Vite already)
 npm create vite@latest skillfolio-frontend
 
 # Navigate into project folder
@@ -55,7 +47,7 @@ cd skillfolio-frontend
 # Install dependencies
 npm install
 
-# Install tailwindcss postcss autoprefixer
+# Install tailwindcss postcss autoprefixer (if not present yet)
 npm install -D tailwindcss@3 postcss autoprefixer
 
 # Initialize
@@ -79,16 +71,18 @@ npm install axios
 Make sure the Django backend is running at `http://127.0.0.1:8000` with these endpoints available:  
 
 - `POST /api/auth/register/`  
-- `POST /api/auth/login/`  
+- `POST /api/auth/login/`  (expects { username: <email>, password })
 - `GET /api/certificates/`  
-- `POST /api/certificates/` (supports file upload)
+- `POST /api/certificates/` (multipart; field name: file_upload)
+
+If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api.js.
 
 ---
 
 ## 📅 Documentation
 
-- [components & pages](skillfolio-frontend/docs//components/*)
-- [Global State (Zustand)](skillfolio-frontend/docs//state)
+- /docs//components/* - [UI components & pages]
+- /docs//state - [Global State (Zustand)
 
 ---
 
@@ -123,7 +117,7 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
     - Created src/components/Navbar.jsx with links (Home, Dashboard, Login, Register)
     - Scaffolded placeholder pages in src/pages (LandingPage, Dashboard, Login, Register)
 
-  - Key files: src/main.jsx, src/App.jsx, src/components/Navbar.jsx, src/pages/*
+  - Key files: `src/main.jsx`, `src/App.jsx`, `src/components/Navbar.jsx`, `src/pages/*`
 
   - Next Steps: Add mobile hamburger nav later in a small feature/navbar-mobile branch (optional)
 
@@ -144,7 +138,7 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
     - Applied Tailwind styling for a dark-sleek vibe (using custom theme colors + fonts)
     - Fully responsive (mobile-first design with centered layout)
 
-  - Key files: src/pages/LandingPage.jsx
+  - Key files: `src/pages/LandingPage.jsx`
 
   - Next Steps:
 
@@ -164,7 +158,8 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
       - **Main Content** area with:
         - Welcome heading
         - Three placeholder stat cards: Total Certificates, Total Projects, Goal Progress
-        - Recent Certificates list (static items for now)
+        - Total Certificates now reflects live backend data (via store)
+        - Recent Certificates list pulls from store (backed by API load)
     - Styled using the dark-sleek theme tokens (background, text, etc.)
     - Responsive design → Sidebar hidden on small screens, content remains accessible
     - Connected dashboard stats to backend API
@@ -190,12 +185,12 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
     - Navbar now dynamically updates to show Login/Register when logged out, and Logout + email when logged in
 
   - Key files: 
-    - src/pages/Login.jsx 
-    - src/pages/Register.jsx
-    - src/components/ProtectedRoute.jsx
-    - src/components/Navbar.jsx
-    - src/store/useAppStore.js (Zustand auth logic)
-    - src/lib/api.js
+    - `src/pages/Login.jsx` 
+    - `src/pages/Register.jsx`
+    - `src/components/ProtectedRoute.jsx`
+    - `src/components/Navbar.jsx`
+    - `src/store/useAppStore.js` (Zustand auth logic)
+    - `src/lib/api.js`
 
   - Next Steps: 
     - Handle API error messages more gracefully in UI.
@@ -212,20 +207,21 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
     - Local addProject still available for now (will be swapped with API calls).
     - Bootstrapping mechanism ensures guards wait
   
-  - Key files: src/store/useAppStore.js
+  - Key files: `src/store/useAppStore.js`
   
   - Next Steps: 
-    - Replace mocks with live backend API calls for projects.
+    - Add projects API (GET/POST), then edit/delete
 
 ---
 
 - **feature/add-certificates**:
 
   - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
+             wired to backend
   
   - Current Status: 
     - Certificates list loads from `GET /api/certificates/`  
-    - Add Certificate form sends `POST /api/certificates/` with file upload  
+    - Add Certificate form sends `POST /api/certificates/` with multiple file upload  
     - Loading + error states handled in store  
     - Dashboard certificate count now reflects backend  
   
@@ -242,20 +238,22 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
 
   - Purpose: Let users capture projects and optionally link them to certificates.
   
-  - Current Status: Form + list powered by store; certificate linking supported.
+  - Current Status: 
+    - Form + list powered by store
+    - Dropdown shows certificates (from live or local), link optional
+
   - Key files (planned): 
     - `src/pages/Projects.jsx`
-    - `src/components/forms/ProjectForm.jsx`
-    - `route /projects`
-    - `/projects/new`
+    - `src/components/forms/ProjectForm.jsx` (planned)
 
-  - Next Steps: Replace with API integration, link projects to certificates & show guided questions
+  - Next Steps: Replace with API integration (GET api/projects/, POST api/projects/), link projects to certificates (by ID) & show guided questions
 
 ---
 
 - **feature/documentation**:
 
-  - Purpose: 
+  - Purpose: keep README + docs in sync with implemented features
+
   - Key files (planned): 
     - `README.md`
     - `skillfolio-frontend/*`
