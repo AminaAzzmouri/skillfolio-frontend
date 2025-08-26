@@ -9,10 +9,12 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 ## 🚀 Features (Planned)
 
 - Landing page (Skillfolio intro + call-to-action)
-- User authentication (login, register, logout)(✅ wired to backend)
-- Dashboard for managing certificates & achievements (✅ shows real cert count; projects local)
-- Forms to add certificates (✅ live API) and projects (🟨 local for now)
+- User authentication (login, register, logout) ✅ wired to backend
+- Dashboard with live stats (certificates & projects) ✅
+- Certificates: list + add with file upload ✅ live API
+- Projects: list + add with optional certificate link ✅ live API
 - Responsive design (desktop + mobile)
+
 ---
 
 ## 🛠️ Tech Stack
@@ -237,21 +239,44 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
 
 - **feature/add-certificates**:
 
-  - Purpose: Allow users to add certificates (title, issuer, date, file placeholder) and list them.
-             wired to backend
-  
-  - Current Status: 
-    - Certificates list loads from `GET /api/certificates/`  
-    - Add Certificate form sends POST `/api/certificates/` with single file upload (file_upload)
-    - Loading + error states handled in store  
-    - Dashboard certificate count now reflects backend  
-  
-  - Key files (planned): 
-    - `src/pages/Certificates.jsx`  
-    - `src/components/forms/CertificateForm.jsx`  
+  - Purpose: Add certificates via API (title, issuer, date, file).
+
+  - Current Status:
+    - ✅ Certificates list loads from GET `/api/certificates/`
+    - ✅ Add Certificate form (split into `CertificateForm`) sends POST multipart `/api/certificates/`
+    - ✅ Store handles FormData creation + prepends new items
+    - ✅ Loading/error/empty states integrated
+    - ✅ Dashboard pulls live certificate count
+
+  - Key files:
+    - `src/pages/Certificates.jsx`
+    - `src/components/forms/CertificateForm.jsx`
     - `src/store/useAppStore.js` (fetchCertificates/createCertificate)  
-  
-  - Next Steps: Add certificate detail page, edit/delete support. 
+
+  - Next Steps:
+    - Add certificate detail, edit/delete endpoints
+
+---
+
+- **feature/certificates-polish**
+
+  - Purpose: Improve Certificates page with better UX and polish.
+
+  - Current Status:
+    - ✅ Calls `fetchCertificates()` on mount
+    - ✅ Shows loading, error, and empty states
+    - ✅ Form split into `CertificateForm` component
+    - ✅ Submit button disables while posting
+    - ✅ File input resets correctly after upload
+    - ✅ Links to uploaded files (absolute URLs supported)
+
+  - Key files:
+    - `src/pages/Certificates.jsx`
+    - `src/components/forms/CertificateForm.jsx`
+
+  - Next Steps:
+    - Add edit/delete flows
+    - File preview chip with styled UI
 
 ---
 
@@ -260,21 +285,21 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
   - Purpose: Let users capture projects and optionally link them to certificates.
 
   - Current Status:
-    - ✅ Projects list loads from `GET /api/projects/`
-    - ✅ Add Project sends `POST /api/projects/` with payload:
-        { title, description, certificate: <certificateId | null> }
-    - ✅ Dropdown options come from Certificates (already loaded from API)
-    - ✅ Basic loading / error states in store
-    - ⏳ Edit/Delete planned next
+    - ✅ Project list loads from GET `/api/projects/`
+    - ✅ Add Project sends POST `/api/projects/` with:
+      { title, description, certificate: <id | null> }
+    - ✅ Certificate dropdown is populated from live API
+    - ✅ Loading/error states integrated
+    - ⏳ Edit/Delete planned
 
   - Key files:
     - `src/pages/Projects.jsx`
-    - `src/store/useAppStore.js` (fetchProjects/createProject)
+    - `src/store/useAppStore.js` (fetchProjects/createProjects)
 
   - Next Steps:
     - Add project edit/delete in UI
     - Show “recent projects” on Dashboard
-    - Optional: guided questions UI on the project form
+    - Optional: guided questions UI
 
 ---
 

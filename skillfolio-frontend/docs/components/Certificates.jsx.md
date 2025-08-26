@@ -1,131 +1,85 @@
-**Certificates.jsx**:
-
 ## Purpose:
-
 ===============================================================================
 
 This page lets users **add and view certificates** (title, issuer, date earned, optional file).
-In the `feature/add-certificates` work, it talks to the **Django API** (`/api/certificates/`)
+In the `feature/add-certificates` + `feature/certificates-polish` work, it talks to the **Django API** (`/api/certificates/`)
 instead of local mock state.
 
 ===============================================================================
 
 ## Structure:
-
 ===============================================================================
 
 ### State & Data (Zustand store):
 
 • `certificates` — array populated by `fetchCertificates()` (GET `/api/certificates/`)  
- • `certificatesLoading` — boolean while fetching  
- • `certificatesError` — string/null on fetch/post failures  
- • `createCertificate({ title, issuer, date_earned, file })` — POST multipart to `/api/certificates/`
+• `certificatesLoading` — boolean while fetching  
+• `certificatesError` — string/null on fetch/post failures  
+• `createCertificate({ title, issuer, date_earned, file })` — POST multipart to `/api/certificates/`
 
 - Builds a `FormData` payload (fields: `title`, `issuer`, `date_earned`, optional `file_upload`)
+- Store prepends new items for snappy UX
 
 ### Hooks:
 
 • `useAppStore()` → read `certificates` and call `fetchCertificates()` / `createCertificate()`  
- • `useEffect` → call `fetchCertificates()` on mount so the list shows server data
+• `useEffect` → call `fetchCertificates()` on mount so the list always shows server data  
 
 ### Form:
 
+• Provided by `CertificateForm.jsx` child component (split out for clarity).  
 • Fields: Title, Issuer, Date Earned, optional File  
- • On submit: 1) Build a `FormData` instance
-
-- `title`, `issuer`, `date_earned`
-- `file_upload` (only if a file is present)
-
-2.  Call `createCertificate(formData)`
-3.  Clear the form (the store prepends the created cert for snappy UX)
+• On submit:  
+  1. Build a `FormData` instance  
+  2. Call `createCertificate(form)` (store handles FormData + API)  
+  3. Reset inputs (file input fully resets via `ref`)  
 
 ### Certificate List:
 
-• Renders `certificates` from the store (server data)  
- • Each entry may show: - Title - Issuer + `date_earned` - A small “file uploaded” chip or link if `file_upload` is present
+• Renders `certificates` from the store (server data), newest first (sorted by date_earned desc).  
+• Each entry shows:  
+  - Title  
+  - Issuer + `date_earned`  
+  - A small file link if `file_upload` is present (absolute URL built from API base if needed)
 
 ===============================================================================
 
-## States to handle (recommended):
-
+## States to handle:
 ===============================================================================
 
-• Loading — show a small spinner/placeholder while `certificatesLoading` is true  
- • Empty — show a friendly “No certificates yet” message  
- • Error — surface `certificatesError` if present (401, validation, network, etc.)
+• **Loading** — “Loading certificates…” message  
+• **Empty** — “No certificates yet” message  
+• **Error** — surface `certificatesError` in red text  
 
 ===============================================================================
 
 ## Backend Contract (DRF):
-
 ===============================================================================
 
-- `GET /api/certificates/` → list current user’s certificates
-- `POST /api/certificates/` (multipart) fields:
-  - `title` (string, required)
-  - `issuer` (string, required)
-  - `date_earned` (YYYY-MM-DD, required)
-  - `file_upload` (file, optional)
+- `GET /api/certificates/` → list current user’s certificates  
+- `POST /api/certificates/` (multipart) fields:  
+  - `title` (string, required)  
+  - `issuer` (string, required)  
+  - `date_earned` (YYYY-MM-DD, required)  
+  - `file_upload` (file, optional)  
+
 - Requires header: `Authorization: Bearer <access_token>`
 
 ===============================================================================
 
-## Implementation Notes:
+## Role in Project:
+===============================================================================
+
+A core Skillfolio feature: tracking learning achievements.  
+Feeds the Dashboard’s stats and “recent certificates” list.
 
 ===============================================================================
 
-Use `FormData` for POST when a file is present:
-
-```js
-const fd = new FormData();
-fd.append("title", form.title);
-fd.append("issuer", form.issuer);
-fd.append("date_earned", form.date_earned);
-if (form.file) fd.append("file_upload", form.file);
-await createCertificate({ title: form.title, issuer: form.issuer, date_earned: form.date_earned, file: form.file });
-
-• Your axios instance (api) gets the Authorization header via setAuthToken(access) on login/restore.
-
-• If you see 401 Unauthorized:
-  • ensure you’re logged in (valid access)
-  • confirm setAuthToken(access) was called (DevTools → Request Headers)
-
-================================================================================
-
-## Role in Project:
-
-================================================================================
-
-A core Skillfolio feature: tracking learning achievements.
-It feeds the Dashboard’s stats and “recent certificates” list.
-
-================================================================================
-
 ## Future Enhancements:
+===============================================================================
 
-================================================================================
-
-  - File preview/download (render link when file_upload URL is absolute)
-  - Edit/delete (PUT/PATCH/DELETE endpoints)
-  - Search & filters (issuer, year via query params)
-  - Better UX: drag-and-drop, progress for large files
-  - Optimistic updates with reconciliation
-
-================================================================================
-
-## Minimal Usage Pattern (example):
-================================================================================
-
-// On mount
-useEffect(() => {
-  fetchCertificates(); // GET /api/certificates/
-}, []);
-
-// On submit
-const onSubmit = async (e) => {
-  e.preventDefault();
-  await createCertificate({ title, issuer, date_earned, file }); // handles FormData internally
-  resetForm();
-};
-
-```
+- File preview/download with styled chip  
+- Edit/delete endpoints  
+- Filters (issuer, year)  
+- Drag-and-drop file upload, progress bar  
+- Optimistic updates with reconciliation
