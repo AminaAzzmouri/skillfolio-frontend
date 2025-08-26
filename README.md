@@ -74,6 +74,8 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
 - `POST /api/auth/login/`  (expects { username: <email>, password })
 - `GET /api/certificates/`  
 - `POST /api/certificates/` (multipart; field name: file_upload)
+- `GET /api/projects/`
+- `POST /api/projects/`
 
 If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api.js.
 
@@ -172,6 +174,25 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
 
 ---
 
+- **feature/dashboard-polish**
+
+  - Purpose: Pull fresh data on load and surface states for a smooth UX.
+
+  - Current Status:
+    - ✅ Dashboard calls `fetchCertificates()` and `fetchProjects()` on mount
+    - ✅ Stats show loading/error/empty states
+    - ✅ “Recent Certificates” lists latest items from API
+    - ⏳ Optional: add “Recent Projects” and skeleton loaders
+
+  - Key files:
+    - `src/pages/Dashboard.jsx`
+
+  - Next Steps:
+    - Add a collapsible mobile sidebar (`feature/dashboard-mobile`)
+    - Add “Recent Projects” panel fed by API
+
+---
+
 - **feature/auth-pages**:
 
   - Purpose: Implement Login & Register pages with styled forms connected to backend authentication (Django JWT)
@@ -221,7 +242,7 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
   
   - Current Status: 
     - Certificates list loads from `GET /api/certificates/`  
-    - Add Certificate form sends `POST /api/certificates/` with multiple file upload  
+    - Add Certificate form sends POST `/api/certificates/` with single file upload (file_upload)
     - Loading + error states handled in store  
     - Dashboard certificate count now reflects backend  
   
@@ -234,19 +255,26 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
 
 ---
 
-- **feature/add-project**:
+- **feature/add-project**
 
   - Purpose: Let users capture projects and optionally link them to certificates.
-  
-  - Current Status: 
-    - Form + list powered by store
-    - Dropdown shows certificates (from live or local), link optional
 
-  - Key files (planned): 
+  - Current Status:
+    - ✅ Projects list loads from `GET /api/projects/`
+    - ✅ Add Project sends `POST /api/projects/` with payload:
+        { title, description, certificate: <certificateId | null> }
+    - ✅ Dropdown options come from Certificates (already loaded from API)
+    - ✅ Basic loading / error states in store
+    - ⏳ Edit/Delete planned next
+
+  - Key files:
     - `src/pages/Projects.jsx`
-    - `src/components/forms/ProjectForm.jsx` (planned)
+    - `src/store/useAppStore.js` (fetchProjects/createProject)
 
-  - Next Steps: Replace with API integration (GET api/projects/, POST api/projects/), link projects to certificates (by ID) & show guided questions
+  - Next Steps:
+    - Add project edit/delete in UI
+    - Show “recent projects” on Dashboard
+    - Optional: guided questions UI on the project form
 
 ---
 
