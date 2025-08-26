@@ -55,6 +55,12 @@ npm install -D tailwindcss@3 postcss autoprefixer
 # Initialize
 npx tailwindcss init -p
 
+# Configure API base URL (create .env.local)
+
+# Vite reads variables prefixed with VITE_
+echo "VITE_API_BASE=http://127.0.0.1:8000" > .env.local
+(If you change this later, restart `npm run dev` so Vite picks it up.)
+
 # Run development server
 npm run dev
 
@@ -79,7 +85,7 @@ Make sure the Django backend is running at `http://127.0.0.1:8000` with these en
 - `GET /api/projects/`
 - `POST /api/projects/`
 
-If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api.js.
+If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via VITE_API_BASE.
 
 ---
 
