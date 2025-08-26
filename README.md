@@ -11,8 +11,8 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 - Landing page (Skillfolio intro + call-to-action)
 - User authentication (login, register, logout) ✅ wired to backend
 - Dashboard with live stats (certificates & projects) ✅
-- Certificates: list + add with file upload ✅ live API
-- Projects: list + add with optional certificate link ✅ live API
+- Certificates: list + add with file upload ✅ live API (polished UX)
+- Projects: list + add with optional certificate link ✅ live API (polished UX)
 - Responsive design (desktop + mobile)
 
 ---
@@ -29,8 +29,8 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 ## 📅 Project Timeline
 
 - Week 3: Project setup + basic layout (Landing + Auth pages)
-- Week 4: Backend integration for auth (JWT) + Certificates API (GET/POST with file upload); keep projects local
-- Week 5: Styling, polish, integration with backend data (projects, goals, profile)
+- Week 4: Backend integration for auth (JWT) + Certificates API (GET/POST with file upload) + Projects API (GET/POST with certificate links)
+- Week 5: Styling, polish, integration with backend data (goals, profile)
 
 ---
 
@@ -184,7 +184,6 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
     - ✅ Dashboard calls `fetchCertificates()` and `fetchProjects()` on mount
     - ✅ Stats show loading/error/empty states
     - ✅ “Recent Certificates” lists latest items from API
-    - ⏳ Optional: add “Recent Projects” and skeleton loaders
 
   - Key files:
     - `src/pages/Dashboard.jsx`
@@ -290,7 +289,6 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
       { title, description, certificate: <id | null> }
     - ✅ Certificate dropdown is populated from live API
     - ✅ Loading/error states integrated
-    - ⏳ Edit/Delete planned
 
   - Key files:
     - `src/pages/Projects.jsx`
@@ -300,6 +298,15 @@ If your backend base URL isn’t http://127.0.0.1:8000, update it in src/lib/api
     - Add project edit/delete in UI
     - Show “recent projects” on Dashboard
     - Optional: guided questions UI
+
+---
+
+- **feature/projects-polish**  
+
+  - ✅ Calls `fetchCertificates()` + `fetchProjects()` on mount  
+  - ✅ Submit button disables while posting  
+  - ✅ Shows loading, error, and empty states for both projects and certificates  
+  - ✅ Inline error surfaced if creation fails 
 
 ---
 
