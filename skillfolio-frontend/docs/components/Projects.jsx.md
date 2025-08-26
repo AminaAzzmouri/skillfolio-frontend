@@ -32,7 +32,7 @@ Authentication is handled globally (JWT), so requests include
 ### Local component state:
   • `form` → `{ title, description, certificateId }`  
   • `submitting` → disables submit button while posting  
-  • `submitError` → shows API error if creation fails
+  • `submitError` → shows API error inline if creation fails
 
 ### Effects:
   • On mount:
@@ -57,7 +57,7 @@ Submit flow:
   1) Validate locally
   2) Call `createProject({ title, description, certificateId })`
   3) On success, the new project is **prepended** for snappy UX
-  4) On failure, show a user-friendly error extracted from the API response
+  4) On failure, show a user-friendly error inline (`submitError`)
 
 ===============================================================================
 
@@ -66,11 +66,12 @@ Submit flow:
 
 - Loading:
     • “Loading certificates…” while certificates fetch  
-    • “Loading projects…” while projects fetch
+    • “Loading projects…” while projects fetch  
 - Error:
-    • Render concise errors when `certificatesError` or `projectsError` is set
+    • Render concise errors when `certificatesError` or `projectsError` is set  
+    • Show inline error message if form submission fails  
 - Empty:
-    • If `projects` is empty after loading, show a gentle “No projects yet” message
+    • If `projects` is empty after loading, show “No projects yet—add your first above.”
 
 ===============================================================================
 
@@ -87,13 +88,8 @@ that other entities can follow.
 ## Future Enhancements:
 ===============================================================================
 
-- Edit/delete (PUT/PATCH/DELETE)
-- Filtering & search (e.g., `?certificate=<id>`, `?search=...`, ordering)
-- Richer rendering (markdown, attachments, screenshots)
-- Guided questions in the form (tools used, impact, problem solved)
-- Pagination support (switch to `data.results` with DRF pagination)
-- Guided questions in the form (tools used, impact, problem solved).
-- Pagination support (swap data → data.results when DRF pagination is enabled).
-
-
-
+- Edit/delete (PUT/PATCH/DELETE)  
+- Filtering & search (e.g., `?certificate=<id>`, `?search=...`, ordering)  
+- Richer rendering (markdown, attachments, screenshots)  
+- Guided questions in the form (tools used, impact, problem solved)  
+- Pagination support (swap data → data.results when DRF pagination is enabled)  
