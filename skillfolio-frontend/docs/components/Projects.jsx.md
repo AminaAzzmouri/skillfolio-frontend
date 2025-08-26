@@ -1,112 +1,99 @@
 **Projects.jsx**:
 
-  ## Purpose:
-  ================================================================================
+## Purpose:
+===============================================================================
 
-  This component provides the interface for users to **add and manage projects** 
-  within the Skillfolio app. 
+This page lets users **create and list projects** and optionally link each project
+to a certificate (by certificate ID). It now uses the **live backend API**:
 
-  Projects can optionally be linked to certificates, allowing users to showcase how 
-  their learning achievements are applied in practice.
+  • `GET /api/projects/` — list projects  
+  • `POST /api/projects/` — create a project  
+  • Reads certificates from `GET /api/certificates/` to populate the link dropdown
 
-  It now uses the live backend API:
-  
-    • GET `/api/projects/` to list projects
-    • POST `/api/projects/` to create projects
-    • Reads certificates from GET `/api/certificates/` to populate the link dropdown
+Authentication is handled globally (JWT), so requests include
+`Authorization: Bearer <access>` via the axios helper.
 
-   Authentication is handled globally (JWT), so requests include 
-   Authorization: Bearer <access> via the axios helper.
+===============================================================================
 
-  ================================================================================
+## Structure:
+===============================================================================
 
-  ## Structure:
-  ================================================================================
+### State (Zustand: useAppStore):
+  • Projects slice:
+    - `projects` / `projectsLoading` / `projectsError`
+    - `fetchProjects()` — GET `/api/projects/`
+    - `createProject({ title, description, certificateId })` — POST `/api/projects/`
+      (sends `{ title, description, certificate: certificateId || null }`)
 
-  #### State (from Zustand: useAppStore):
-      
-      • projects / projectsLoading / projectsError
-        Live project list + loading & error flags.
+  • Certificates slice (for dropdown):
+    - `certificates` / `certificatesLoading` / `certificatesError`
+    - `fetchCertificates()` — GET `/api/certificates/`
 
-      • certificates / certificatesLoading / certificatesError
-        Certificate list (used for the dropdown).
+### Local component state:
+  • `form` → `{ title, description, certificateId }`  
+  • `submitting` → disables submit button while posting  
+  • `submitError` → shows API error if creation fails
 
-      • fetchProjects() → loads projects from the API
+### Effects:
+  • On mount:
+    1) `fetchCertificates()` — populate the dropdown
+    2) `fetchProjects()` — load the list
 
-      • createProject({ title, description, certificateId }) → POST to API
+### Certificate title mapping:
+  • Use `useMemo` to build a `Map<id, title>` from `certificates` so each project row
+    can show the certificate title (API returns only `certificate` id).
 
-      • fetchCertificates() → loads certificates for the dropdown
+===============================================================================
 
-  #### Local component state:
-      • form → { title, description (textarea for longer input), certificateId }
-      • submitError → surfaces API errors on create
-      • submitting → disables the submit button while posting
+## Form & Submission:
+===============================================================================
 
-  #### Effects:
-      • useEffect on mount:
-            * fetchCertificates() then fetchProjects() to populate UI.
+Fields:
+  - Project Title (required)
+  - Description (required)
+  - Certificate (optional select; sends `certificate: <id>` or `null`)
 
-  #### Certificate title mapping:
-      • useMemo creates a Map<id, title> from the certificates array so the 
-        project list can show a readable certificate title (the API returns 
-        only the certificate ID for each project).
+Submit flow:
+  1) Validate locally
+  2) Call `createProject({ title, description, certificateId })`
+  3) On success, the new project is **prepended** for snappy UX
+  4) On failure, show a user-friendly error extracted from the API response
 
-  ================================================================================
+===============================================================================
 
-  ## Form & Submission:
-  ================================================================================
+## UI States:
+===============================================================================
 
-      • Fields:
-            * Project Title (required)
-            * Description (required)
-            * Certificate (optional select; sends certificate: <id> or null)
+- Loading:
+    • “Loading certificates…” while certificates fetch  
+    • “Loading projects…” while projects fetch
+- Error:
+    • Render concise errors when `certificatesError` or `projectsError` is set
+- Empty:
+    • If `projects` is empty after loading, show a gentle “No projects yet” message
 
-      • Submit flow:            
-            1. Validate locally.
-            2. Call createProject({ title, description, certificateId }).
-            3. On success, the new project is prepended to the list for a snappy UX.
-            4. On failure, show a friendly error extracted from the API response (if present).
+===============================================================================
 
-  ================================================================================
+## Role in Project:
+===============================================================================
 
-  ## UI States:
-  ================================================================================
+Projects showcase the **applied side of learning**—how certificates translate into
+real work. The page complements Certificates by feeding the Dashboard’s project
+stats (total projects, recent items) and establishes the list + create pattern
+that other entities can follow.
 
-      • Loading:
-            * Shows “Loading projects…” or “Loading certificates…” 
-              while requests are in flight.
+===============================================================================
 
-      • Error:
-            * Renders a concise error message if projectsError 
-              or certificatesError is set.
-        
-      • Empty:            
-            * If projects is empty after loading, shows a gentle “No projects yet” message.
+## Future Enhancements:
+===============================================================================
 
-  ================================================================================
-
-  ## Role in Project:
-  ================================================================================
-
-  Projects.jsx highlights the **applied side of learning**, showing how certificates 
-  are connected to real-world projects. 
-  
-  It complements Certificates.jsx by demonstrating progress in action and feeds 
-  into the Dashboard’s project stats (total projects, recent items).
-
-  Establishes the standard list + create pattern for other entities.
-
-  ================================================================================
-
-  ## Future Enhancements:
-  ================================================================================
-
-  - Add edit/delete functionality for managing projects (PUT/PATCH/DELETE endpoints).
-  - Filtering & search (e.g., ?certificate=<id>, ?search=..., ordering).
-  - Support multiple certificate links per project.
-  - Richer rendering (markdown description, attachments, screenshots).
-  - Guided questions in the form (tools used, impact, problem solved).
-  - Pagination support (swap data → data.results when DRF pagination is enabled).
+- Edit/delete (PUT/PATCH/DELETE)
+- Filtering & search (e.g., `?certificate=<id>`, `?search=...`, ordering)
+- Richer rendering (markdown, attachments, screenshots)
+- Guided questions in the form (tools used, impact, problem solved)
+- Pagination support (switch to `data.results` with DRF pagination)
+- Guided questions in the form (tools used, impact, problem solved).
+- Pagination support (swap data → data.results when DRF pagination is enabled).
 
 
 
