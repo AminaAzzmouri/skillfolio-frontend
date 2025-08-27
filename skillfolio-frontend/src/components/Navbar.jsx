@@ -10,9 +10,12 @@ export default function Navbar() {
   const logout = useAppStore((s) => s.logout);
   const navigate = useNavigate();
 
-  const onLogout = () => {
-    logout();
-    navigate("/login",{ replace: true });
+  const onLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate("/login", { replace: true });
+    }
   };
 
   return (
@@ -38,4 +41,4 @@ export default function Navbar() {
       {/* Hamburger menu for mobile will be added later */}
     </nav>
   );
-  }
+}

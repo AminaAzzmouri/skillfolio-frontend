@@ -1,8 +1,9 @@
-// src/store/useAppStore.js
+/* Docs: see docs/State/useAppStore.js.md */
+
 // Zustand store: JWT auth + certificates (API) + projects (API) + bootstrapping.
 
 import { create } from "zustand";
-import { api, setAuthToken } from "../lib/api";
+import { api, setAuthToken, logoutApi } from "../lib/api";
 
 // Fallback id if needed (kept for any local/demo adders)
 const rid = () =>
@@ -80,45 +81,43 @@ export const useAppStore = create((set, get) => ({
   },
 
   // DRF ProjectSerializer exposes fields="__all__"
-  // We send { title, description, certificate } where certificate is an ID or null.
-  // DRF ProjectSerializer exposes fields="__all__"
   // We now send guided fields + status; BE expects 'certificate' key (ID or null).
-   async createProject({
-     title,
-     description,
-     certificateId,
-     status = "planned",
-     work_type = null,
-     duration_text = null,
-     primary_goal = null,
-     challenges_short = null,
-     skills_used = null,
-     outcome_short = null,
-     skills_to_improve = null,
-   }) {
-     set({ projectsError: null });
+  async createProject({
+    title,
+    description,
+    certificateId,
+    status = "planned",
+    work_type = null,
+    duration_text = null,
+    primary_goal = null,
+    challenges_short = null,
+    skills_used = null,
+    outcome_short = null,
+    skills_to_improve = null,
+  }) {
+    set({ projectsError: null });
 
-     const payload = {
-       title,
-       description,
-       certificate: certificateId || null,
-       status, // 'planned' | 'in_progress' | 'completed'
-       work_type,
-       duration_text,
-       primary_goal,
-       challenges_short,
-       skills_used,
-       outcome_short,
-       skills_to_improve,
-     };
+    const payload = {
+      title,
+      description,
+      certificate: certificateId || null,
+      status, // 'planned' | 'in_progress' | 'completed'
+      work_type,
+      duration_text,
+      primary_goal,
+      challenges_short,
+      skills_used,
+      outcome_short,
+      skills_to_improve,
+    };
 
-     const { data } = await api.post("/api/projects/", payload);
-     set((s) => ({ projects: [data, ...s.projects] })); // prepend for snappy UX
-     return data;
-   },
-   
+    const { data } = await api.post("/api/projects/", payload);
+    set((s) => ({ projects: [data, ...s.projects] })); // prepend for snappy UX
+    return data;
+  },
+
   // -----------------------
-  // Auth (unchanged)
+  // Auth
   // -----------------------
   user: null,          // { email }
   access: null,        // JWT access token
@@ -145,10 +144,20 @@ export const useAppStore = create((set, get) => ({
     return user;
   },
 
-  logout() {
-    setAuthToken(null);
-    set({ user: null, access: null, refresh: null });
-    localStorage.removeItem("sf_user");
+  /**
+   * Logout:
+   * - POST /api/auth/logout/ with { refresh } to blacklist server-side
+   * - Clear client tokens/state/localStorage regardless of API success
+   */
+  async logout() {
+    const { refresh } = get();
+    try {
+      await logoutApi(refresh);
+    } finally {
+      setAuthToken(null);
+      set({ user: null, access: null, refresh: null });
+      localStorage.removeItem("sf_user");
+    }
   },
 
   restoreUser() {

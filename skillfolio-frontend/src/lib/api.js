@@ -43,3 +43,17 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * Logout API: blacklist the refresh token server-side.
+ * POST /api/auth/logout/  { refresh: <refresh_token> }
+ * - If this fails, FE still clears local state (best-effort).
+ */
+export async function logoutApi(refresh) {
+  if (!refresh) return; // nothing to send; FE will still clear locally
+  try {
+    await api.post("/api/auth/logout/", { refresh });
+  } catch (e) {
+    // swallow — we’ll still clear client-side
+  }
+}
