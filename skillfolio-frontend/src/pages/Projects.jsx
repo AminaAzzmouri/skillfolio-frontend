@@ -3,6 +3,38 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 
+const GOAL_LABEL = {
+  practice_skill: "Practice a new skill",
+  deliver_feature: "Deliver a feature",
+  build_demo: "Build a demo",
+  solve_problem: "Solve a real problem",
+};
+
+function buildPreview({
+  title,
+  work_type,
+  duration_text,
+  primary_goal,
+  challenges_short,
+  skills_used,
+  outcome_short,
+  skills_to_improve,
+}) {
+  const role =
+    work_type === "team" ? "Team project" : work_type === "individual" ? "Individual project" : "Project";
+  const goalPhrase = GOAL_LABEL[primary_goal] || "N/A";
+  const dur = duration_text || "N/A";
+
+  const bits = [];
+  bits.push(`${title || "Untitled"} — ${role} (~${dur}).`);
+  bits.push(`Goal: ${goalPhrase}.`);
+  bits.push(`Challenges: ${challenges_short?.trim() || "N/A"}.`);
+  bits.push(`Skills/Tools: ${skills_used?.trim() || "N/A"}.`);
+  bits.push(`Outcome: ${outcome_short?.trim() || "N/A"}.`);
+  bits.push(`Next focus: ${skills_to_improve?.trim() || "N/A"}.`);
+  return bits.join(" ");
+}
+
 export default function Projects() {
   // Store reads
   const projects             = useAppStore((s) => s.projects);
@@ -19,16 +51,28 @@ export default function Projects() {
   // Local form state
   const [form, setForm] = useState({
     title: "",
+    // guided fields
+    work_type: "",               // 'individual' | 'team' | ''
+    duration_text: "",
+    primary_goal: "",            // 'practice_skill' | 'deliver_feature' | 'build_demo' | 'solve_problem' | ''
+    challenges_short: "",
+    skills_used: "",
+    outcome_short: "",
+    skills_to_improve: "",
+    // description (editable)
     description: "",
+    // linking
     certificateId: "",
   });
+
+  // track if user manually edited description (to stop auto-syncing)
+  const [descDirty, setDescDirty] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // On mount: ensure both dropdown (certs) and projects list are fresh
+  // On mount: load certs then projects
   useEffect(() => {
-    // fetch certificates first (so dropdown has options), then projects
-    // (order isn’t strictly required, but this feels nicer)
     fetchCertificates();
     fetchProjects();
   }, [fetchCertificates, fetchProjects]);
@@ -40,6 +84,25 @@ export default function Projects() {
     return m;
   }, [certificates]);
 
+  // Live preview text from guided fields
+  const preview = useMemo(() => buildPreview(form), [form]);
+
+  // Keep `description` synced with preview until the user edits it manually
+  useEffect(() => {
+    if (!descDirty) {
+      setForm((f) => ({ ...f, description: preview }));
+    }
+  }, [preview, descDirty]);
+
+  const onChange = (patch) => {
+    setForm((f) => ({ ...f, ...patch }));
+  };
+
+  const onDescriptionChange = (e) => {
+    setDescDirty(true);
+    onChange({ description: e.target.value });
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
@@ -47,11 +110,34 @@ export default function Projects() {
     try {
       const payload = {
         title: form.title.trim(),
-        description: form.description.trim(),
-        certificateId: form.certificateId || null, // null = optional link
+        description: form.description.trim(),                 // final editable text
+        certificateId: form.certificateId || null,           // FE field → BE expects 'certificate'
+        // guided answers (sent to BE; BE also auto-generates if description is blank)
+        work_type: form.work_type || null,
+        duration_text: form.duration_text.trim() || null,
+        primary_goal: form.primary_goal || null,
+        challenges_short: form.challenges_short.trim() || null,
+        skills_used: form.skills_used.trim() || null,
+        outcome_short: form.outcome_short.trim() || null,
+        skills_to_improve: form.skills_to_improve.trim() || null,
       };
+
       await createProject(payload);
-      setForm({ title: "", description: "", certificateId: "" });
+
+      // reset
+      setForm({
+        title: "",
+        work_type: "",
+        duration_text: "",
+        primary_goal: "",
+        challenges_short: "",
+        skills_used: "",
+        outcome_short: "",
+        skills_to_improve: "",
+        description: "",
+        certificateId: "",
+      });
+      setDescDirty(false);
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -78,23 +164,75 @@ export default function Projects() {
           className="rounded p-3 bg-background/60 border border-gray-700"
           placeholder="Project Title"
           value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          onChange={(e) => onChange({ title: e.target.value })}
           required
         />
+
+        {/* Guided inputs */}
+        <select
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.work_type}
+          onChange={(e) => onChange({ work_type: e.target.value })}
+        >
+          <option value="">Work Type (optional)</option>
+          <option value="individual">Individual</option>
+          <option value="team">Team</option>
+        </select>
+
+        <input
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder='Duration (e.g., "3 weeks")'
+          value={form.duration_text}
+          onChange={(e) => onChange({ duration_text: e.target.value })}
+        />
+
+        <select
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.primary_goal}
+          onChange={(e) => onChange({ primary_goal: e.target.value })}
+        >
+          <option value="">Primary Goal (optional)</option>
+          <option value="practice_skill">{GOAL_LABEL.practice_skill}</option>
+          <option value="deliver_feature">{GOAL_LABEL.deliver_feature}</option>
+          <option value="build_demo">{GOAL_LABEL.build_demo}</option>
+          <option value="solve_problem">{GOAL_LABEL.solve_problem}</option>
+        </select>
+
         <textarea
           className="rounded p-3 bg-background/60 border border-gray-700"
-          rows="4"
-          placeholder="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          required
+          rows="2"
+          placeholder="Challenges faced (short)"
+          value={form.challenges_short}
+          onChange={(e) => onChange({ challenges_short: e.target.value })}
         />
+
+        <input
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="Skills/Tools (comma-separated)"
+          value={form.skills_used}
+          onChange={(e) => onChange({ skills_used: e.target.value })}
+        />
+
+        <textarea
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          rows="2"
+          placeholder="Outcome / impact (short)"
+          value={form.outcome_short}
+          onChange={(e) => onChange({ outcome_short: e.target.value })}
+        />
+
+        <input
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="Skills to practice more (comma-separated)"
+          value={form.skills_to_improve}
+          onChange={(e) => onChange({ skills_to_improve: e.target.value })}
+        />
+
+        {/* Certificate link */}
         <select
           className="rounded p-3 bg-background/60 border border-gray-700"
           value={form.certificateId}
-          onChange={(e) =>
-            setForm({ ...form, certificateId: e.target.value })
-          }
+          onChange={(e) => onChange({ certificateId: e.target.value })}
           disabled={certificatesLoading}
         >
           <option value="">
@@ -109,12 +247,22 @@ export default function Projects() {
           ))}
         </select>
 
+        {/* Live preview (editable) */}
+        <label className="text-sm opacity-80">Auto-generated description (you can edit):</label>
+        <textarea
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          rows="4"
+          value={form.description}
+          onChange={onDescriptionChange}
+          placeholder="Auto preview will appear here…"
+        />
+
         {submitError && (
           <p className="text-sm text-accent -mt-2">{submitError}</p>
         )}
 
         <button
-          disabled={submitting}
+          disabled={submitting || !form.title.trim()}
           className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition disabled:opacity-60"
         >
           {submitting ? "Adding…" : "Add Project"}

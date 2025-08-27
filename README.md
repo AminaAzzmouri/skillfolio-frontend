@@ -12,7 +12,9 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 - User authentication (login, register, logout) ✅ wired to backend
 - Dashboard with live stats (certificates & projects) ✅
 - Certificates: list + add with file upload ✅ live API (polished UX)
-- Projects: list + add with optional certificate link ✅ live API (polished UX)
+- Projects:
+            * list + add with optional certificate link ✅
+            * guided questions + live auto-generated description preview ✅
 - Responsive design (desktop + mobile)
 
 ---
@@ -30,7 +32,7 @@ Built with **React + Tailwind CSS**, the frontend provides a responsive, modern,
 
 - Week 3: Project setup + basic layout (Landing + Auth pages)
 - Week 4: Backend integration for auth (JWT) + Certificates API (GET/POST with file upload) + Projects API (GET/POST with certificate links)
-- Week 5: Styling, polish, integration with backend data (goals, profile)
+- Week 5: Styling, polish, integration with backend data (goals, profile) + Projects guided questions UI & live auto-description preview
 
 ---
 
@@ -72,6 +74,18 @@ npm install zustand
 
 # Install Axios for API requests
 npm install axios
+==============================================================================
+
+📌 **Quick sanity test: guided questions + auto-description**  
+
+Create a project (leave description empty; fill guided answers). The preview
+textarea will auto-fill; you can still edit. On submit, backend stores both
+the guided answers and final description.
+
+Payload includes:
+{ title, description, certificate, work_type, duration_text, primary_goal,
+  challenges_short, skills_used, outcome_short, skills_to_improve }
+
 ==============================================================================
 
 📌 **Backend setup required**  
@@ -304,6 +318,7 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
     - Add project edit/delete in UI
     - Show “recent projects” on Dashboard
     - Optional: guided questions UI
+    - Add guided questions UI (DONE in feature/guided-questions) with editable auto-generated description preview.
 
 ---
 
@@ -313,6 +328,30 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
   - ✅ Submit button disables while posting  
   - ✅ Shows loading, error, and empty states for both projects and certificates  
   - ✅ Inline error surfaced if creation fails 
+
+---
+
+- **feature/guided-questions**:
+
+  - Purpose: Replace free-form project description with a guided form
+    (short answers + dropdowns) and live auto-generated description preview.
+
+  - Current Status:
+    - ✅ Projects page updated with guided inputs:
+      Work type, Duration, Primary goal, Challenges, Skills/Tools,
+      Outcome, Skills to practice.
+    - ✅ Live preview composes a polished description (still editable before submit).
+    - ✅ Store updated to post guided fields to backend
+      (backend also auto-generates if `description` is blank).
+
+  - Key files:
+    - `src/pages/Projects.jsx`
+    - `src/store/useAppStore.js`
+
+  - Next Steps:
+    - Add edit/delete flows
+    - Chips UI for short comma-separated fields
+    - Dashboard “Recent Projects” fed by API
 
 ---
 

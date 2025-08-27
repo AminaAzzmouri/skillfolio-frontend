@@ -81,18 +81,39 @@ export const useAppStore = create((set, get) => ({
 
   // DRF ProjectSerializer exposes fields="__all__"
   // We send { title, description, certificate } where certificate is an ID or null.
-  async createProject({ title, description, certificateId }) {
+  // DRF ProjectSerializer exposes fields="__all__"
+// We now send guided fields too; BE expects 'certificate' key (ID or null).
+  async createProject({
+    title,
+    description,
+    certificateId,
+    work_type = null,
+    duration_text = null,
+    primary_goal = null,
+    challenges_short = null,
+    skills_used = null,
+    outcome_short = null,
+    skills_to_improve = null,
+  }) {
     set({ projectsError: null });
+
     const payload = {
       title,
       description,
-      certificate: certificateId || null, // null is fine (optional link)
+      certificate: certificateId || null,
+      work_type,
+      duration_text,
+      primary_goal,
+      challenges_short,
+      skills_used,
+      outcome_short,
+      skills_to_improve,
     };
+
     const { data } = await api.post("/api/projects/", payload);
-    // Prepend for snappy UX
-    set((s) => ({ projects: [data, ...s.projects] }));
+    set((s) => ({ projects: [data, ...s.projects] })); // prepend for snappy UX
     return data;
-  },
+  }
 
   // -----------------------
   // Auth (unchanged)
