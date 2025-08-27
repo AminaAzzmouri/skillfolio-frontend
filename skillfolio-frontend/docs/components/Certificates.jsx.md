@@ -41,6 +41,7 @@ instead of local mock state.
   - Title  
   - Issuer + `date_earned`  
   - A small file link if `file_upload` is present (absolute URL built from API base if needed)
+• Certificates are listed first (newest → oldest), followed by a button to open/close the CertificateForm.
 
 ===============================================================================
 

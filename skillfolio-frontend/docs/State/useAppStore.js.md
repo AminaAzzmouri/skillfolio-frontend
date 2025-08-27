@@ -98,6 +98,8 @@
             
     • On success, prepends the new project into state for snappy UX.
     • Errors are captured into `projectsError`.
+    • Payload now includes status (default "planned") along with guided fields.
+    • Remove mention of local demo adders as “temporary” → clarify both certificates & projects are now API-backed.
 
     **Note:** This replaces the earlier temporary `addProject` demo method with a full API-backed flow, aligning projects with certificates.
 
@@ -119,6 +121,7 @@
   - Login → login() → navigate to /dashboard
   - Logout → logout() → navigate to /login
   - Navbar can show “Logout” and user email if user is set.
+  - Axios interceptor cleans up stale tokens → no more “network error when hot reload auto-logs you in”.
 
   **Session persistence**:
 

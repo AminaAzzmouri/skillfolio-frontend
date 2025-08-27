@@ -29,6 +29,7 @@
     • "/register" → Register page.  
     • "/certificates" → Certificates page (add/view certificates).  
     • "/projects" → Projects page (add/view projects).
+    • "/ " now uses HomeGate: LandingPage for guests, Home.jsx for authed users - New Home.jsx page is different from Dashboard.
 
   #### ProtectedRoute:
     • Wraps private pages (currently `/dashboard`) to ensure only authenticated users can access them.  
@@ -51,6 +52,8 @@
 
   This ensures a page refresh keeps you logged in, and the UI won’t prematurely
   redirect to /login while the session is still being restored.
+
+  Navbar is always visible and works with auth-aware HomeGate.
 
   ================================================================================
 

@@ -24,13 +24,15 @@ By isolating the form from the list view, we keep code cleaner and easier to mai
 • Title (required)  
 • Issuer (required)  
 • Date Earned (required)  
-• File Upload (optional, accepts PDF/images)  
+• File Upload (optional, accepts PDF/images) 
+• Status dropdown (planned | in_progress | completed). 
 
 ### Behavior:
 1. Prevent default  
 2. Call `createCertificate(form)` (store turns it into FormData)  
 3. Reset form (including hard reset of file input via `ref`)  
-4. Show API error if request fails  
+4. Show API error if request fails 
+5. The form resets after submit and is shown/hidden via a toggle on the Certificates page. 
 
 ================================================================================
 
@@ -64,3 +66,4 @@ By isolating the form from the list view, we keep code cleaner and easier to mai
 - Drag-and-drop upload, progress indicators
 - Support edit mode (prefill form values)
 - Extract common input styles into shared components
+- “Edit existing certificate” since toggle UI paves the way.

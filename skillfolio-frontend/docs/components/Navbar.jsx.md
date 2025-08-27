@@ -56,7 +56,9 @@
     • remove localStorage session
     • clear the axios Authorization header
   - (Optional) You may use `useNavigate()` to redirect after logout if desired.
+  - Fix where Navbar was temporarily missing after login → now always renders on every route.
 
+  **Note:** Navbar shows Home link that resolves to Landing page for guests and Home page for authed users.
 
   ### Minimal example (reference)
     ```jsx

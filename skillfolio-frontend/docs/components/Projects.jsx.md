@@ -58,6 +58,8 @@ Fields:
   - Outcome/impact (short textarea)
   - Skills to practice more (short comma-separated list)
   - Auto-generated Description (preview, editable)
+  - Status is now part of the form (same enum values as backend).
+  - Projects list is rendered first, with a button at the bottom to toggle form visibility.
 
 Submit flow:
   1. User fills guided fields
@@ -85,6 +87,7 @@ Submit flow:
     • Show inline error message if form submission fails  
 - Empty:
     • If `projects` is empty after loading, show “No projects yet—add your first above.”
+- The “Add Project” form no longer always shows — it’s toggled
 
 ===============================================================================
 

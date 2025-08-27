@@ -355,6 +355,25 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
 
 ---
 
+- **feature/auth-home-page**:
+
+  - Purpose: Differentiate home route between guests and authenticated users.
+
+  - Current Status:
+    - Added new Home.jsx page for logged-in users.
+    - Introduced HomeGate component in App.jsx to render LandingPage for guests, Home for authed.
+    - Navbar now always displays consistently, Home link adapts contextually.
+
+  - Key files:
+    - `src/pages/Home.jsx`
+    - `src/App.jsx`
+    - `src/components/Navbar.jsx`
+
+  - Next Steps:
+    - Expand Home page with personalized content (recent projects/certificates).
+
+---
+
 - **feature/documentation**:
 
   - Purpose: keep README + docs in sync with implemented features
