@@ -12,7 +12,7 @@
     - Certificates integration (load list from live API, create with optional file upload).
     - Projects (temporary local list): kept for UI demo; will be API-backed next
 
-  This keeps components lean and avoids prop drilling while remaining simpler than heavy state libraries.
+  This keeps API interactions available to any component without prop drilling.
 
   =============================================================================================================
 
@@ -28,14 +28,16 @@
     • addProject(payload): Adds a new project with a unique ID and links optionally to a certificate.
     • rid() — robust ID generator (prefers crypto.randomUUID, falls back to base-36 string)
 
-  ### Authentication State:
+  ### Authentication:
+  
+  1- State:
 
     • user: null by default; becomes `{ email }` when logged in or registered
     • access: null → JWT access token (used for API calls).
     • refresh: null → JWT refresh token (reserved for future token refresh flow).
     • bootstrapped: false initially → flips to true after restoreUser() finishes so route guards can wait before redirecting.
-
-  ### Authentication Actions:
+  
+  2- Actions:
 
     • async register({ email, password })
       Calls POST /api/auth/register/.
@@ -49,14 +51,14 @@
           - Sets Authorization header globally via setAuthToken(access) so all future api (axios) calls are authenticated
           - Stores { user, access, refresh } in both Zustand and localStorage under sf_user
     
-    • logout(): Clears the axios header, resets auth state in the store, and removes sf_user from localStorage.
+    • logout(): 
+      Calls POST /api/auth/logout/ then clears auth state in the store, and removes sf_user from localStorage.
 
     • restoreUser(): 
           - Reads sf_user from localStorage at app start
           - Restores { user, access, refresh } 
           - Reapplies the axios header if an access token is present.
-          - Always sets bootstrapped: true in a finally block so components (e.g., ProtectedRoute) 
-            can safely wait for session restoration before deciding to redirect.
+          - Always sets bootstrapped: true in a finally block so components (e.g., ProtectedRoute) can safely wait for session restoration before deciding to redirect.
 
   ### Certificates (API) Actions:
 
@@ -80,8 +82,7 @@
           - GET `/api/projects/`
           - Populates projects from server response (handles both array and paginated { results: [...] })
     • async createProject({...}):
-          - POST /api/projects/
-          - Payload now supports guided fields in addition to title/description/certificate:
+          - POST /api/projects/ with guided fields in addition to title/description/certificate:
 
             {
             title,
@@ -143,20 +144,28 @@
   ================================================================================================
 
   - Acts as the **single source of truth** for auth and certificate lists
-  - Encapsulates JWT handling & anxios header management so pages/component can stay clean
-  - Enables a smooth transition from mock lists to real API without refactoring the entire app
-  - (Certificates are live now; Projects will follow the same pattern next)
+  - Abstracts away API logic from components (pages just call store actions).
+  - Ensures consistent session management and token handling across the app.
+
+  ================================================================================================
+
+ ## What's done so far:
+  ================================================================================================
+
+  - Auth: register/login/logout/restoreUser with JWT and refresh storage.
+  - Certificates: live API integration, with file uploads and validation.
+  - Projects: live API integration, with guided fields and status.
+  - Bootstrapping flow → ensures no redirects before restoreUser runs.
 
   ================================================================================================
 
   ## Future Enhancements:
   ============================================================================================
 
-  - Full projects CRUD with API: fetchProjects, createProject, update, delete
-  - Token refresh using refresh + /api/auth/refresh/.
-  - Introduce loading/error flags per async action for better UX.
-  - Add selectors for derived data (e.g., counts for the dashboard).
-  - Consider splitting into slices (auth slice, data slice) if the store grows.
+  - Add update/delete for projects & certificates (CRUD).
+  - Token auto-refresh on expiry.
+  - Store slices (split auth/data) for maintainability.
+  - Derived selectors (dashboard counts, progress, etc.).
 
   ================================================================================================
 

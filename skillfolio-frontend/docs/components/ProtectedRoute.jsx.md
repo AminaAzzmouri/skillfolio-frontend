@@ -74,3 +74,19 @@
   - Role-based routing: You can extend the guard to check roles/permissions and redirect accordingly.
   - Custom loading UI: Replace the inline “Loading…” div with a skeleton/spinner component if desired.
 
+  ## What’s Done So Far:
+  ================================================================================
+
+  - Bootstrapping guard in place.
+  - Simple "Loading…" fallback.
+  - Auth-only access to protected routes.
+
+  ## Future Enhancements:
+  ================================================================================
+
+  - Add role-based routing (e.g., admin vs user).
+  - Token freshness validation.
+  - Replace "Loading…" with skeleton loaders/spinners.
+
+
+

@@ -23,13 +23,15 @@
     • Provides navigation links: Home, Dashboard, Login, Register.
 
   #### Routes:
-    • "/" → LandingPage (public entry point).  
+    • / → HomeGate (Landing for guests, Home for authed users).
     • "/dashboard" → Dashboard (protected by `ProtectedRoute`).  
-    • "/login" → Login page.  
-    • "/register" → Register page.  
-    • "/certificates" → Certificates page (add/view certificates).  
-    • "/projects" → Projects page (add/view projects).
-    • "/ " now uses HomeGate: LandingPage for guests, Home.jsx for authed users - New Home.jsx page is different from Dashboard.
+    • "/login" → Login page (public).  
+    • "/register" → Register page (public).  
+    • "/certificates" → Certificates page (add/view certificates): protected.  
+    • "/projects" → Projects page (add/view projects): protected.
+    
+    HomeGate: LandingPage for guests, Home.jsx for authed users 
+    - New Home.jsx page is different from Dashboard.
 
   #### ProtectedRoute:
     • Wraps private pages (currently `/dashboard`) to ensure only authenticated users can access them.  
@@ -64,6 +66,16 @@
   - Keeps routing centralized and easy to maintain.  
   - Ensures consistent global layout with Navbar on every page.  
   - Coordinates authentication flow by restoring sessions and guarding private routes.
+
+  ================================================================================
+
+  ## What's done so far:
+  ================================================================================
+
+  - Navbar always visible.
+  - Auth-aware HomeGate implemented.
+  - Protected routes working with ProtectedRoute.
+  - Session restore wired in via Zustand store.
 
   ================================================================================
 

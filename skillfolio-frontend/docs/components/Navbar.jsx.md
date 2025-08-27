@@ -35,6 +35,10 @@
       • Dashboard → `/dashboard`
       • **User indicator**: shows the logged-in user’s email
       • **Logout button**: clears tokens + state and returns to a public route
+      
+      • Guest → Login / Register.
+      • Authenticated → email + Logout button.
+
 
   #### Styling:
       • Dark background (`bg-background`) and light text (`text-text`) 
@@ -113,6 +117,15 @@
 
   ================================================================================
 
+  ## What's done so far:
+  ================================================================================
+
+  - Always renders on all routes.
+  - Logout triggers backend + frontend state clear
+  - Auth-aware links (switch between Login/Register and email/Logout).
+
+  ================================================================================
+
   ## Future Enhancements:
   ================================================================================
 
@@ -120,4 +133,3 @@
   - Avatar dropdown with profile/goal links.
   - Make Navbar sticky or transparent on scroll for better UX.
   - Active link styles, keyboard focus improvements, and ARIA roles.
-  - Toast/confirmation on logout (optional).
