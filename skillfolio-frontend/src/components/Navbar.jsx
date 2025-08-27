@@ -1,6 +1,6 @@
 /* Docs: see docs/components/Navbar.jsx.md */
 
-// Minimal, safe comment: Global top navigation with links.
+// Global top navigation with links.
 
 import { Link, useNavigate } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
@@ -12,7 +12,8 @@ export default function Navbar() {
 
   const onLogout = () => {
     logout();
-    navigate("login/",{ replace: true });
+    navigate("/login",{ replace: true });
+  };
 
   return (
     <nav className="bg-background text-text p-4 flex justify-between items-center">
@@ -37,4 +38,4 @@ export default function Navbar() {
       {/* Hamburger menu for mobile will be added later */}
     </nav>
   );
-  }}
+  }
