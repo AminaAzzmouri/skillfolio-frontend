@@ -1,6 +1,6 @@
 /* Docs: see docs/components/Certificates.jsx.md */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useAppStore } from "../store/useAppStore";
 import { api } from "../lib/api";
 import CertificateForm from "../components/forms/CertificateForm";
@@ -18,6 +18,10 @@ export default function Certificates() {
     certificatesError: s.certificatesError,
     fetchCertificates: s.fetchCertificates,
   }));
+
+  // local: show/hide form
+  const [showForm, setShowForm] = useState(false);
+  const formRef = useRef(null);
 
   // Build absolute URL if DRF returns a relative path (e.g., /media/...)
   const makeFileUrl = (maybeUrl) => {
@@ -41,13 +45,18 @@ export default function Certificates() {
     fetchCertificates();
   }, [fetchCertificates]);
 
+  // scroll when opening the form
+  useEffect(() => {
+    if (showForm && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showForm]);
+
   return (
     <div className="min-h-screen bg-background text-text p-6">
       <h1 className="font-heading text-2xl mb-4">Certificates</h1>
 
-      <CertificateForm />
-
-      {/* List states */}
+      {/* List states FIRST */}
       {certificatesLoading && (
         <div className="opacity-80 mb-4">Loading certificates…</div>
       )}
@@ -62,7 +71,7 @@ export default function Certificates() {
           <div className="opacity-80 mb-2">No certificates yet.</div>
         )}
 
-      <ul className="space-y-2 max-w-xl">
+      <ul className="space-y-2 max-w-xl mb-6">
         {orderedCertificates.map((c) => {
           const url = makeFileUrl(c.file_upload);
           return (
@@ -88,6 +97,23 @@ export default function Certificates() {
           );
         })}
       </ul>
+
+      {/* Toggle button */}
+      <div className="max-w-xl">
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
+        >
+          {showForm ? "Hide Add Certificate" : "Add Certificate"}
+        </button>
+      </div>
+
+      {/* Form (hidden until toggled) */}
+      {showForm && (
+        <div ref={formRef} className="max-w-xl mt-4">
+          <CertificateForm />
+        </div>
+      )}
     </div>
   );
 }

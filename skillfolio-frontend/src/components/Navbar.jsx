@@ -13,7 +13,6 @@ export default function Navbar() {
   const onLogout = () => {
     logout();
     navigate("login/",{ replace: true });
-  }
 
   return (
     <nav className="bg-background text-text p-4 flex justify-between items-center">
@@ -38,4 +37,4 @@ export default function Navbar() {
       {/* Hamburger menu for mobile will be added later */}
     </nav>
   );
-}
+  }}
