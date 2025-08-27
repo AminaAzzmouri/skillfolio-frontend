@@ -4,6 +4,7 @@
 This page lets users **add and view certificates** (title, issuer, date earned, optional file).
 In the `feature/add-certificates` + `feature/certificates-polish` work, it talks to the **Django API** (`/api/certificates/`)
 instead of local mock state.
+Certificate cards now include inline file previews (image thumbnail or PDF object).
 
 ===============================================================================
 
@@ -15,6 +16,7 @@ instead of local mock state.
 • `certificates` — array populated by `fetchCertificates()` (GET `/api/certificates/`)  
 • `certificatesLoading` — boolean while fetching  
 • `certificatesError` — string/null on fetch/post failures  
+• `fetchCertificates()` — GET `/api/certificates/`
 • `createCertificate({ title, issuer, date_earned, file })` — POST multipart to `/api/certificates/`
 
 - Builds a `FormData` payload (fields: `title`, `issuer`, `date_earned`, optional `file_upload`)
@@ -40,6 +42,9 @@ instead of local mock state.
 • Each entry shows:  
   - Title  
   - Issuer + `date_earned`  
+  - File previews:
+       • Image → <img> thumbnail
+       • PDF → <object> preview, fallback “View file” link
   - A small file link if `file_upload` is present (absolute URL built from API base if needed)
 • Certificates are listed first (newest → oldest), followed by a button to open/close the CertificateForm.
 
@@ -63,7 +68,6 @@ instead of local mock state.
   - `issuer` (string, required)  
   - `date_earned` (YYYY-MM-DD, required)  
   - `file_upload` (file, optional)  
-
 - Requires header: `Authorization: Bearer <access_token>`
 
 ===============================================================================
@@ -71,7 +75,7 @@ instead of local mock state.
 ## Role in Project:
 ===============================================================================
 
-A core Skillfolio feature: tracking learning achievements.  
+A core Skillfolio feature: tracking learning achievements with visual context (certificate previews). 
 Feeds the Dashboard’s stats and “recent certificates” list.
 
 ===============================================================================

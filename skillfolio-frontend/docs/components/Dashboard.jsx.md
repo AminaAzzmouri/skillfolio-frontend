@@ -11,6 +11,8 @@ The dashboard **fetches certificates and projects on mount** and surfaces
 **loading / empty / error** states in the stats so the UI stays informative
 while data is loading.
 
+Recent certificates now render as cards with file thumbnails (image preview or PDF placeholder).
+
 ===============================================================================
 
 ## Structure:
@@ -28,9 +30,13 @@ Layout:
           → Total Projects (from API-backed store)
           → Goal progress (static placeholder for now)
           → Each card can show loading/empty/error states depending on fetch status
-      • **Recent Certificates**:
-          → Short list of the most recently loaded certificates (from API-backed store).
+      • **Recent Certificates Panel**:
+          → Short list of the most 5 recently loaded certificates (from API-backed store).
           → If empty, show an “empty” placeholder.
+          → Each rendered as a card:
+                 • Thumbnail (image / PDF / fallback “No file”)
+                 • Title, Issuer, Date
+                 • Link to file
 
 Styling:
   - Tailwind custom theme (dark background, light text).
@@ -97,5 +103,3 @@ is visible, since totals and recent lists reflect the live backend.
 - Make the sidebar collapsible on mobile (hamburger) or introduce a layout shell.
 - Compute and visualize goal progress (e.g., projects completed vs. target).
 - Link items to detail pages (certificate/project detail routes).
-
-

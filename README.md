@@ -266,14 +266,19 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
     - ✅ Store handles FormData creation + prepends new items
     - ✅ Loading/error/empty states integrated
     - ✅ Dashboard pulls live certificate count
+    - ✅ Certificates and Dashboard now render inline previews of uploaded files
+            • Image → thumbnail preview
+            • PDF → embedded preview or link
 
   - Key files:
     - `src/pages/Certificates.jsx`
     - `src/components/forms/CertificateForm.jsx`
-    - `src/store/useAppStore.js` (fetchCertificates/createCertificate)  
+    - `src/pages/Dashboard.jsx`
+    - `src/store/useAppStore.js` (fetchCertificates/createCertificate) 
 
   - Next Steps:
     - Add certificate detail, edit/delete endpoints
+    - Better styled previews (chips / modals)
 
 ---
 
@@ -374,7 +379,6 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
   - **Next Steps:**
     - Personalize the Home message (e.g., greet by user email/name).
     - Optional background animation / confetti for milestones.
-
 
 ---
 
