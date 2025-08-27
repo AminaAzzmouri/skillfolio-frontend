@@ -3,6 +3,19 @@
 import { useEffect, useMemo } from "react";
 import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
+import { api } from "../lib/api";
+
+// Same helpers to detect previewable file types
+const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
+const isPdfUrl   = (url) => /\.pdf$/i.test(url || "");
+
+// Build absolute URL if BE returns relative path
+const makeFileUrl = (maybeUrl) => {
+  if (!maybeUrl || typeof maybeUrl !== "string") return null;
+  if (maybeUrl.startsWith("http")) return maybeUrl;
+  const base = api?.defaults?.baseURL || "";
+  return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
+};
 
 export default function Dashboard() {
   // data
@@ -88,16 +101,65 @@ export default function Dashboard() {
           ) : certsError ? (
             <div className="text-accent">Error: {certsError}</div>
           ) : certificates.length === 0 ? (
-            <div className="opacity-70">No certificates yet. <Link className="underline" to="/certificates">Add your first one</Link>.</div>
+            <div className="opacity-70">
+              No certificates yet.{" "}
+              <Link className="underline" to="/certificates">
+                Add your first one
+              </Link>.
+            </div>
           ) : (
-            <ul className="list-disc pl-6 space-y-1">
-              {recentCertificates.map((c) => (
-                <li key={c.id}>
-                  <span className="font-medium">{c.title}</span>
-                  {c.issuer ? <span className="opacity-80"> — {c.issuer}</span> : null}
-                </li>
-              ))}
-            </ul>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {recentCertificates.map((c) => {
+                const url = makeFileUrl(c?.file_upload);
+                const showImg = url && isImageUrl(url);
+                const showPdf = url && isPdfUrl(url);
+
+                return (
+                  <div
+                    key={c.id}
+                    className="rounded border border-gray-700 bg-background/60 p-3 flex gap-3"
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-20 h-20 shrink-0 rounded border border-gray-700 overflow-hidden flex items-center justify-center">
+                      {showImg ? (
+                        <img
+                          src={url}
+                          alt={`${c.title} file`}
+                          className="object-cover w-full h-full"
+                          loading="lazy"
+                        />
+                      ) : showPdf ? (
+                        <div className="text-xs opacity-80 text-center px-1">
+                          PDF
+                          <br />
+                          preview
+                        </div>
+                      ) : (
+                        <div className="text-xs opacity-50">No file</div>
+                      )}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{c.title}</div>
+                      <div className="text-sm opacity-80 truncate">
+                        {c.issuer} {c.date_earned ? `• ${c.date_earned}` : null}
+                      </div>
+                      {url && (
+                        <a
+                          className="text-xs underline inline-block mt-1"
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          View file
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </main>

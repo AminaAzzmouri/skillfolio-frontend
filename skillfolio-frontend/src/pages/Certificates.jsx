@@ -5,6 +5,10 @@ import { useAppStore } from "../store/useAppStore";
 import { api } from "../lib/api";
 import CertificateForm from "../components/forms/CertificateForm";
 
+// Best-effort helpers to detect previewable file types by extension
+const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
+const isPdfUrl   = (url) => /\.pdf$/i.test(url || "");
+
 export default function Certificates() {
   // store state + actions
   const {
@@ -74,6 +78,9 @@ export default function Certificates() {
       <ul className="space-y-2 max-w-xl mb-6">
         {orderedCertificates.map((c) => {
           const url = makeFileUrl(c.file_upload);
+          const showImg = url && isImageUrl(url);
+          const showPdf = url && isPdfUrl(url);
+
           return (
             <li
               key={c.id}
@@ -83,15 +90,48 @@ export default function Certificates() {
               <div className="text-sm text-gray-300">
                 {c.issuer} • {c.date_earned}
               </div>
+
+              {/* Inline preview (image or PDF) */}
               {url && (
-                <a
-                  className="text-xs mt-1 inline-block underline"
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  View file
-                </a>
+                <>
+                  {showImg ? (
+                    <img
+                      src={url}
+                      alt={`${c.title} file`}
+                      className="mt-2 max-h-48 w-auto rounded border border-gray-700"
+                      loading="lazy"
+                    />
+                  ) : showPdf ? (
+                    <div className="mt-2">
+                      <object
+                        data={`${url}#page=1&zoom=100`}
+                        type="application/pdf"
+                        width="100%"
+                        height="300"
+                        className="rounded border border-gray-700"
+                      >
+                        <a
+                          className="text-xs underline"
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open PDF
+                        </a>
+                      </object>
+                    </div>
+                  ) : null}
+
+                  {/* Always offer a link */}
+                  <a
+                    className="text-xs mt-2 inline-block underline"
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View file
+                  </a>
+                </>
               )}
             </li>
           );
