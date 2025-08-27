@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 export default function Home() {
   const message =
-    "Welcome back, learner. You're doing a great job shaping your career!\n\n" +
+    "Weelcome back, learner. You're doing a great job shaping your career!\n\n" +
     "Every certificate you add, every project you build, is one more step toward your goals.\n\n" +
     "Progress is progress, no matter the size. Head over to your Dashboard anytime you need inspiration — your journey is already unfolding beautifully.";
 

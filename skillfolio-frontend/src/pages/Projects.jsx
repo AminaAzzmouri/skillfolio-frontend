@@ -3,6 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppStore } from "../store/useAppStore";
 
+// Friendly date like "August 27, 2025"
+function formatDateLong(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d)) {
+    // Fall back gracefully if backend ever returns a non-date string
+    return String(iso).slice(0, 10);
+  }
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 const GOAL_LABEL = {
   practice_skill: "Practice a new skill",
   deliver_feature: "Deliver a feature",
@@ -191,7 +206,7 @@ export default function Projects() {
                   <div className="text-xs mt-1">
                     {linkedTitle ? `Linked to: ${linkedTitle}` : "Not linked"}
                     {" • "}
-                    Created: {p.date_created ?? "—"}
+                    Created: {formatDateLong(p.date_created)}
                   </div>
                 </li>
               );
