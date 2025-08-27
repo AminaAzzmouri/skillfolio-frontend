@@ -50,14 +50,27 @@ Authentication is handled globally (JWT), so requests include
 
 Fields:
   - Project Title (required)
-  - Description (required)
-  - Certificate (optional select; sends `certificate: <id>` or `null`)
+  - Work type (select: individual | team)
+  - Duration (short text, e.g., "3 weeks")
+  - Primary goal (select: practice_skill, deliver_feature, build_demo, solve_problem)
+  - Challenges faced (short textarea)
+  - Skills/tools used (short comma-separated list)
+  - Outcome/impact (short textarea)
+  - Skills to practice more (short comma-separated list)
+  - Auto-generated Description (preview, editable)
 
 Submit flow:
-  1) Validate locally
-  2) Call `createProject({ title, description, certificateId })`
-  3) On success, the new project is **prepended** for snappy UX
-  4) On failure, show a user-friendly error inline (`submitError`)
+  1. User fills guided fields
+  2. Component builds a live preview string (auto-description) following template:
+      ${title} — ${work_type === 'team' ? 'Team project' : 'Individual project'} (~${duration_text || 'N/A'}).
+      Goal: ${goalPhrase}.
+      Challenges: ${challenges_short || 'N/A'}.
+      Skills/Tools: ${skills_used || 'N/A'}.
+      Outcome: ${outcome_short || 'N/A'}.
+      Next focus: ${skills_to_improve || 'N/A'}.
+      Where `goalPhrase` maps from `primary_goal`.
+  3. User may edit the description before submit.
+  4. Submit sends payload with guided fields + final description.
 
 ===============================================================================
 
@@ -89,7 +102,7 @@ that other entities can follow.
 ===============================================================================
 
 - Edit/delete (PUT/PATCH/DELETE)  
-- Filtering & search (e.g., `?certificate=<id>`, `?search=...`, ordering)  
+- Filtering & search  
 - Richer rendering (markdown, attachments, screenshots)  
-- Guided questions in the form (tools used, impact, problem solved)  
-- Pagination support (swap data → data.results when DRF pagination is enabled)  
+- **UI polish: chips/multi-selects for challenges and skills**  
+- Pagination support  

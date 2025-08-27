@@ -309,16 +309,15 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
       { title, description, certificate: <id | null> }
     - ✅ Certificate dropdown is populated from live API
     - ✅ Loading/error states integrated
+    - ✅ Guided questions form & auto-generated description (now supported)
 
   - Key files:
     - `src/pages/Projects.jsx`
     - `src/store/useAppStore.js` (fetchProjects/createProjects)
 
   - Next Steps:
-    - Add project edit/delete in UI
-    - Show “recent projects” on Dashboard
-    - Optional: guided questions UI
-    - Add guided questions UI (DONE in feature/guided-questions) with editable auto-generated description preview.
+     - Add project edit/delete in UI
+     - Show “recent projects” on Dashboard
 
 ---
 
@@ -328,6 +327,7 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
   - ✅ Submit button disables while posting  
   - ✅ Shows loading, error, and empty states for both projects and certificates  
   - ✅ Inline error surfaced if creation fails 
+  - Auto-description preview integrated with guided fields (work_type, duration, primary_goal, etc.)
 
 ---
 

@@ -72,7 +72,37 @@
                   * optional file_upload (PDF/image)
           - On success, prepends the created item to certificates.
 
+  ### Projects (API) Actions:
+
+    • projects: [] — list of projects from the backend  
+    • projectsLoading / projectsError — track fetch/post states
+    • async fetchProjects():
+          - GET `/api/projects/`
+          - Populates projects from server response (handles both array and paginated { results: [...] })
+    • async createProject({...}):
+          - POST /api/projects/
+          - Payload now supports guided fields in addition to title/description/certificate:
+
+            {
+            title,
+            description,              // final description (auto-generated but editable)
+            certificate: certificateId || null,
+            work_type,                // 'individual' | 'team' | null
+            duration_text,            // string | null
+            primary_goal,             // 'practice_skill' | 'deliver_feature' | 'build_demo' | 'solve_problem' | null
+            challenges_short,         // string | null
+            skills_used,              // string | null (CSV or short list)
+            outcome_short,            // string | null
+            skills_to_improve         // string | null
+            }
+            
+    • On success, prepends the new project into state for snappy UX.
+    • Errors are captured into `projectsError`.
+
+    **Note:** This replaces the earlier temporary `addProject` demo method with a full API-backed flow, aligning projects with certificates.
+
   ### Axios integration:
+  
 
     • api and setAuthToken come from src/lib/api.
           - api is the preconfigured axios instance (baseURL, etc.).

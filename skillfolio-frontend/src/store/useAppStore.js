@@ -113,7 +113,7 @@ export const useAppStore = create((set, get) => ({
     const { data } = await api.post("/api/projects/", payload);
     set((s) => ({ projects: [data, ...s.projects] })); // prepend for snappy UX
     return data;
-  }
+  },
 
   // -----------------------
   // Auth (unchanged)
