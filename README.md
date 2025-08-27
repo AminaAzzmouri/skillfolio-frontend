@@ -357,20 +357,24 @@ If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via
 
 - **feature/auth-home-page**:
 
-  - Purpose: Differentiate home route between guests and authenticated users.
+  - **Purpose:** Provide a welcoming, motivational **Home** page exclusively for authenticated users, separate from the public Landing page.
 
-  - Current Status:
-    - Added new Home.jsx page for logged-in users.
-    - Introduced HomeGate component in App.jsx to render LandingPage for guests, Home for authed.
-    - Navbar now always displays consistently, Home link adapts contextually.
+  - **Current Status:**
+    - ✅ Added `src/pages/Home.jsx` with a **typing animation** message (no embedded links).
+    - ✅ Introduced **protected** route `/home` in `App.jsx`.
+    - ✅ Updated `Navbar.jsx` to route **Home** to `/home` when authenticated and `/` when logged out.
+    - ✅ Added docs: `docs/components/Home.jsx.md`, and updated Navbar/App docs accordingly.
 
-  - Key files:
+  - **Key files:**
     - `src/pages/Home.jsx`
-    - `src/App.jsx`
-    - `src/components/Navbar.jsx`
+    - `src/App.jsx` (new `/home` route)
+    - `src/components/Navbar.jsx` (conditional Home link)
+    - `docs/components/Home.jsx.md`
 
-  - Next Steps:
-    - Expand Home page with personalized content (recent projects/certificates).
+  - **Next Steps:**
+    - Personalize the Home message (e.g., greet by user email/name).
+    - Optional background animation / confetti for milestones.
+
 
 ---
 
