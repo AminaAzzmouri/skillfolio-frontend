@@ -7,17 +7,31 @@ import { api } from "../lib/api";
 import ProgressBar from "../components/ProgressBar";
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
+import ToastContainer from "../components/Toast.jsx";
+import { motion } from "framer-motion";
 
-// Same helpers to detect previewable file types
+// preview helpers
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
 const isPdfUrl   = (url) => /\.pdf$/i.test(url || "");
-
-// Build absolute URL if BE returns relative path
 const makeFileUrl = (maybeUrl) => {
   if (!maybeUrl || typeof maybeUrl !== "string") return null;
   if (maybeUrl.startsWith("http")) return maybeUrl;
   const base = api?.defaults?.baseURL || "";
   return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
+};
+
+// small animation presets
+const containerStagger = {
+  hidden: { opacity: 0, y: 8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { staggerChildren: 0.06, when: "beforeChildren" },
+  },
+};
+const itemFade = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0 },
 };
 
 export default function Dashboard() {
@@ -48,6 +62,15 @@ export default function Dashboard() {
   const [goalsProgressLoading, setGoalsProgressLoading] = useState(false);
   const [goalsProgressError, setGoalsProgressError] = useState("");
 
+  // toasts
+  const [toasts, setToasts] = useState([]);
+  const pushToast = (type, message) =>
+    setToasts((t) => [
+      ...t,
+      { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, type, message },
+    ]);
+  const dismissToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
+
   // Fetch store lists for recents
   useEffect(() => {
     fetchCertificates();
@@ -65,13 +88,15 @@ export default function Dashboard() {
         const { data } = await api.get("/api/analytics/summary/");
         if (!cancelled) setSummary(data);
       } catch (e) {
+        const msg =
+          e?.response?.data?.detail ||
+          (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+          e?.message ||
+          "Failed to load analytics summary";
         if (!cancelled) {
-          const msg =
-            e?.response?.data?.detail ||
-            (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
-            e?.message ||
-            "Failed to load analytics summary";
           setSummaryError(msg);
+          // toast for analytics errors
+          pushToast("error", msg);
         }
       } finally {
         if (!cancelled) setSummaryLoading(false);
@@ -91,13 +116,15 @@ export default function Dashboard() {
         const items = Array.isArray(data) ? data : data?.results || [];
         if (!cancelled) setGoalsProgress(items);
       } catch (e) {
+        const msg =
+          e?.response?.data?.detail ||
+          (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+          e?.message ||
+          "Failed to load goals progress";
         if (!cancelled) {
-          const msg =
-            e?.response?.data?.detail ||
-            (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
-            e?.message ||
-            "Failed to load goals progress";
           setGoalsProgressError(msg);
+          // toast for analytics errors
+          pushToast("error", msg);
         }
       } finally {
         if (!cancelled) setGoalsProgressLoading(false);
@@ -137,6 +164,9 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-background text-text">
+      {/* Toasts */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+
       {/* Sidebar */}
       <aside className="w-64 bg-background/90 p-4 border-r border-gray-700 hidden md:block">
         <h2 className="font-heading text-xl mb-6">Dashboard</h2>
@@ -152,16 +182,17 @@ export default function Dashboard() {
       <main className="flex-1 p-6">
         <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
 
-        {/* Stats cards — driven by analytics summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* KPI cards — animated container & items */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
+          variants={containerStagger}
+          initial="hidden"
+          animate="show"
+        >
           {/* Total Certificates */}
-          <div className="bg-background/70 p-4 rounded border border-gray-700">
+          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
             <div className="flex items-center justify-between">
               <div className="font-semibold mb-1">Total Certificates</div>
-              {/* Always show "View all" */}
-              <Link to="/certificates" className="text-xs underline opacity-80 hover:opacity-100">
-                View all
-              </Link>
             </div>
             {summaryLoading ? (
               <Loading compact />
@@ -172,15 +203,12 @@ export default function Dashboard() {
             ) : (
               <EmptyState message="No data yet." />
             )}
-          </div>
+          </motion.div>
 
           {/* Total Projects */}
-          <div className="bg-background/70 p-4 rounded border border-gray-700">
+          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
             <div className="flex items-center justify-between">
               <div className="font-semibold mb-1">Total Projects</div>
-              <Link to="/projects" className="text-xs underline opacity-80 hover:opacity-100">
-                View all
-              </Link>
             </div>
             {summaryLoading ? (
               <Loading compact />
@@ -191,15 +219,12 @@ export default function Dashboard() {
             ) : (
               <EmptyState message="No data yet." />
             )}
-          </div>
+          </motion.div>
 
-          {/* Goal Progress (avg across goals from /api/analytics/goals-progress/) */}
-          <div className="bg-background/70 p-4 rounded border border-gray-700">
+          {/* Goal Progress */}
+          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
             <div className="flex items-center justify-between">
               <div className="font-semibold mb-1">Goal Progress</div>
-              <Link to="/goals" className="text-xs underline opacity-80 hover:opacity-100">
-                View all
-              </Link>
             </div>
             {goalsProgressLoading ? (
               <Loading compact />
@@ -213,11 +238,16 @@ export default function Dashboard() {
                 <ProgressBar value={goalProgress} />
               </>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Recent Certificates */}
-        <div className="bg-background/70 p-4 rounded border border-gray-700 mb-6">
+        <motion.div
+          className="bg-background/70 p-4 rounded border border-gray-700 mb-6"
+          variants={containerStagger}
+          initial="hidden"
+          animate="show"
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Certificates</h2>
             <Link to="/certificates" className="text-xs underline opacity-80 hover:opacity-100">
@@ -248,9 +278,10 @@ export default function Dashboard() {
                 const showPdf = url && isPdfUrl(url);
 
                 return (
-                  <div
+                  <motion.div
                     key={c.id}
                     className="rounded border border-gray-700 bg-background/60 p-3 flex gap-3"
+                    variants={itemFade}
                   >
                     {/* Thumbnail */}
                     <div className="w-20 h-20 shrink-0 rounded border border-gray-700 overflow-hidden flex items-center justify-center">
@@ -289,15 +320,20 @@ export default function Dashboard() {
                         </a>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Recent Projects */}
-        <div className="bg-background/70 p-4 rounded border border-gray-700 mb-6">
+        <motion.div
+          className="bg-background/70 p-4 rounded border border-gray-700 mb-6"
+          variants={containerStagger}
+          initial="hidden"
+          animate="show"
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Projects</h2>
             <Link to="/projects" className="text-xs underline opacity-80 hover:opacity-100">
@@ -314,9 +350,10 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentProjects.map((p) => (
-                <div
+                <motion.div
                   key={p.id}
                   className="rounded border border-gray-700 bg-background/60 p-3"
+                  variants={itemFade}
                 >
                   <div className="font-medium truncate">{p.title}</div>
                   <div className="text-xs opacity-80 mt-1">
@@ -325,14 +362,19 @@ export default function Dashboard() {
                   {p.description && (
                     <div className="text-sm opacity-80 mt-2 line-clamp-3">{p.description}</div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Recent Goals */}
-        <div className="bg-background/70 p-4 rounded border border-gray-700">
+        <motion.div
+          className="bg-background/70 p-4 rounded border border-gray-700"
+          variants={containerStagger}
+          initial="hidden"
+          animate="show"
+        >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Goals</h2>
             <Link to="/goals" className="text-xs underline opacity-80 hover:opacity-100">
@@ -349,9 +391,10 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentGoals.map((g) => (
-                <div
+                <motion.div
                   key={g.id}
                   className="rounded border border-gray-700 bg-background/60 p-3"
+                  variants={itemFade}
                 >
                   <div className="font-medium truncate">{g.title || "Untitled goal"}</div>
                   <div className="text-xs opacity-80 mt-1">
@@ -360,11 +403,11 @@ export default function Dashboard() {
                   <div className="mt-2">
                     <ProgressBar value={g.steps_progress_percent ?? 0} label="Checklist progress" />
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
       </main>
     </div>
   );
