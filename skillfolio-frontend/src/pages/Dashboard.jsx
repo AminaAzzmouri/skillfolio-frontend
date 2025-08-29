@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
+import ProgressBar from "../components/ProgressBar";
 
 // Same helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
@@ -21,26 +22,37 @@ export default function Dashboard() {
   // data
   const certificates         = useAppStore((s) => s.certificates);
   const projects             = useAppStore((s) => s.projects);
+  const goals                = useAppStore((s) => s.goals);
 
   // loading / errors
   const certsLoading         = useAppStore((s) => s.certificatesLoading);
   const certsError           = useAppStore((s) => s.certificatesError);
   const projectsLoading      = useAppStore((s) => s.projectsLoading);
   const projectsError        = useAppStore((s) => s.projectsError);
+  const goalsLoading         = useAppStore((s) => s.goalsLoading);
+  const goalsError           = useAppStore((s) => s.goalsError);
 
   // actions
   const fetchCertificates    = useAppStore((s) => s.fetchCertificates);
   const fetchProjects        = useAppStore((s) => s.fetchProjects);
+  const fetchGoals           = useAppStore((s) => s.fetchGoals);
 
   useEffect(() => {
-    // Load both so counts & recent are real on first paint
+    // Load all so counts & recent are real on first paint
     fetchCertificates();
     fetchProjects();
-  }, [fetchCertificates, fetchProjects]);
+    fetchGoals();
+  }, [fetchCertificates, fetchProjects, fetchGoals]);
 
-  const goalProgress = 0; // (placeholder for future Goals)
+  // Average checklist progress across goals (fallback 0)
+  const goalProgress = useMemo(() => {
+    if (!Array.isArray(goals) || goals.length === 0) return 0;
+    const vals = goals.map((g) => Number(g?.steps_progress_percent || 0));
+    const sum = vals.reduce((a, b) => a + b, 0);
+    return Math.round(sum / goals.length);
+  }, [goals]);
 
-  // recent 5 certificates (just slice, assuming BE already returns user-scoped)
+  // recent 5 certificates (just slice, assuming BE returns user-scoped)
   const recentCertificates = useMemo(() => {
     if (!Array.isArray(certificates)) return [];
     return certificates.slice(0, 5);
@@ -54,6 +66,7 @@ export default function Dashboard() {
         <ul className="flex flex-col gap-3">
           <li><Link to="/certificates">Certificates</Link></li>
           <li><Link to="/projects">Projects</Link></li>
+          <li><Link to="/goals">Goals</Link></li>
           <li>Profile</li>
         </ul>
       </aside>
@@ -88,7 +101,16 @@ export default function Dashboard() {
 
           <div className="bg-background/70 p-4 rounded border border-gray-700">
             <div className="font-semibold mb-1">Goal Progress</div>
-            <div className="text-2xl">{goalProgress}%</div>
+            {goalsLoading ? (
+              <div className="opacity-70">Loading…</div>
+            ) : goalsError ? (
+              <div className="text-accent text-sm">Error: {goalsError}</div>
+            ) : (
+              <>
+                <div className="text-2xl mb-1">{goalProgress}%</div>
+                <ProgressBar value={goalProgress} />
+              </>
+            )}
           </div>
         </div>
 

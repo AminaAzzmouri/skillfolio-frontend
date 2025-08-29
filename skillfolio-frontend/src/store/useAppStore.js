@@ -1,6 +1,6 @@
 /* Docs: see docs/store/useAppStore.js.md */
 
-// Zustand store: JWT auth + certificates (API) + projects (API) + bootstrapping.
+// Zustand store: JWT auth + certificates (API) + projects (API) + goals (API) + bootstrapping.
 
 import { create } from "zustand";
 import { api, setAuthToken, logoutApi } from "../lib/api";
@@ -13,7 +13,7 @@ import {
   deleteCertificate as apiDeleteCertificate,
 } from "./certificates";
 
-// ---- Projects API helpers (new) ----
+// ---- Projects API helpers ----
 import {
   listProjects,
   createProject as apiCreateProject,
@@ -21,8 +21,16 @@ import {
   deleteProject as apiDeleteProject,
 } from "./projects";
 
+// ---- Goals API helpers (new) ----
+import {
+  listGoals,
+  createGoal as apiCreateGoal,
+  updateGoal as apiUpdateGoal,
+  deleteGoal as apiDeleteGoal,
+} from "./goals";
+
 // Fallback id if needed (kept for any local/demo adders)
-const rid = () => 
+const rid = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(0, 10));
@@ -34,7 +42,7 @@ export const useAppStore = create((set, get) => ({
   certificates: [],
   certificatesLoading: false,
   certificatesError: null,
-  // NEW: pagination meta (for DRF {count, next, previous, results})
+  // DRF pagination meta
   certificatesMeta: { count: 0 },
 
   async fetchCertificates(params) {
@@ -51,9 +59,7 @@ export const useAppStore = create((set, get) => ({
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
-        (typeof err?.response?.data === "object"
-          ? JSON.stringify(err.response.data)
-          : err?.response?.data) ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ??
         "Failed to fetch certificates";
       set({ certificatesLoading: false, certificatesError: msg });
@@ -62,20 +68,14 @@ export const useAppStore = create((set, get) => ({
 
   async createCertificate({ title, issuer, date_earned, file }) {
     set({ certificatesError: null });
-    const created = await createCertificateMultipart({
-      title,
-      issuer,
-      date_earned,
-      file,
-    });
+    const created = await createCertificateMultipart({ title, issuer, date_earned, file });
     // Prepend for snappy UX
     set((s) => ({ certificates: [created, ...s.certificates] }));
-    // (Optional) optimistic meta bump
+    // Optional optimistic bump
     set((s) => ({ certificatesMeta: { count: (s.certificatesMeta?.count ?? 0) + 1 } }));
     return created;
   },
 
-  // PATCH /api/certificates/:id/
   async updateCertificate(id, patch) {
     const updated = await apiUpdateCertificate(id, patch);
     set((s) => ({
@@ -84,12 +84,10 @@ export const useAppStore = create((set, get) => ({
     return updated;
   },
 
-  // DELETE /api/certificates/:id/
   async deleteCertificate(id) {
     await apiDeleteCertificate(id);
     set((s) => ({
       certificates: (s.certificates ?? []).filter((c) => c.id !== id),
-      // (Optional) optimistic meta decrement
       certificatesMeta: { count: Math.max(0, (s.certificatesMeta?.count ?? 1) - 1) },
     }));
   },
@@ -100,7 +98,6 @@ export const useAppStore = create((set, get) => ({
   projects: [],
   projectsLoading: false,
   projectsError: null,
-  // NEW: pagination meta
   projectsMeta: { count: 0 },
 
   async fetchProjects(params) {
@@ -117,17 +114,13 @@ export const useAppStore = create((set, get) => ({
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
-        (typeof err?.response?.data === "object"
-          ? JSON.stringify(err.response.data)
-          : err?.response?.data) ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ??
         "Failed to fetch projects";
       set({ projectsLoading: false, projectsError: msg });
     }
   },
 
-  // DRF ProjectSerializer exposes fields="__all__"
-  // We send guided fields + status; BE expects 'certificate' key (ID or null).
   async createProject({
     title,
     description,
@@ -147,7 +140,7 @@ export const useAppStore = create((set, get) => ({
       title,
       description,
       certificate: certificateId || null,
-      status, // 'planned' | 'in_progress' | 'completed'
+      status,
       work_type,
       duration_text,
       primary_goal,
@@ -158,13 +151,11 @@ export const useAppStore = create((set, get) => ({
     };
 
     const created = await apiCreateProject(payload);
-    set((s) => ({ projects: [created, ...s.projects] })); // prepend for snappy UX
-    // (Optional) optimistic meta bump
+    set((s) => ({ projects: [created, ...s.projects] }));
     set((s) => ({ projectsMeta: { count: (s.projectsMeta?.count ?? 0) + 1 } }));
     return created;
   },
 
-  // NEW: PATCH /api/projects/:id/
   async updateProject(id, patch) {
     const updated = await apiUpdateProject(id, patch);
     set((s) => ({
@@ -173,13 +164,58 @@ export const useAppStore = create((set, get) => ({
     return updated;
   },
 
-  // NEW: DELETE /api/projects/:id/
   async deleteProject(id) {
     await apiDeleteProject(id);
     set((s) => ({
       projects: (s.projects ?? []).filter((p) => p.id !== id),
-      // (Optional) optimistic meta decrement
       projectsMeta: { count: Math.max(0, (s.projectsMeta?.count ?? 1) - 1) },
+    }));
+  },
+
+  // -----------------------
+  // Goals (LIVE API) — NEW
+  // -----------------------
+  goals: [],
+  goalsLoading: false,
+  goalsError: null,
+  // If you add DRF pagination to goals later, add: goalsMeta: { count: 0 }
+
+  async fetchGoals(params) {
+    set({ goalsLoading: true, goalsError: null });
+    try {
+      const data = await listGoals(params);
+      const items = Array.isArray(data) ? data : data?.results || [];
+      set({ goals: items, goalsLoading: false });
+      // If paginated, also set goalsMeta.count the same way as above
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to fetch goals";
+      set({ goalsLoading: false, goalsError: msg });
+    }
+  },
+
+  async createGoal({ target_projects, deadline }) {
+    set({ goalsError: null });
+    const created = await apiCreateGoal({ target_projects, deadline });
+    set((s) => ({ goals: [created, ...s.goals] }));
+    return created;
+  },
+
+  async updateGoal(id, patch) {
+    const updated = await apiUpdateGoal(id, patch);
+    set((s) => ({
+      goals: (s.goals ?? []).map((g) => (g.id === id ? updated : g)),
+    }));
+    return updated;
+  },
+
+  async deleteGoal(id) {
+    await apiDeleteGoal(id);
+    set((s) => ({
+      goals: (s.goals ?? []).filter((g) => g.id !== id),
     }));
   },
 
@@ -200,7 +236,7 @@ export const useAppStore = create((set, get) => ({
   async login({ email, password }) {
     if (!email || !password) throw new Error("Missing credentials");
     const { data } = await api.post("/api/auth/login/", {
-      username: email, // default Django User expects "username"
+      username: email,
       password,
     });
     const { access, refresh } = data;

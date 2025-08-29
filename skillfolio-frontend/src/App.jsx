@@ -10,6 +10,7 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import Certificates from "./pages/Certificates.jsx";
 import Projects from "./pages/Projects.jsx";
+import Goals from "./pages/Goals.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAppStore } from "./store/useAppStore";
 
@@ -59,6 +60,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Projects />
+            </ProtectedRoute>
+          }
+        />
+       <Route 
+          path="/goals" 
+          element={
+            <ProtectedRoute>
+              <Goals />
             </ProtectedRoute>
           }
         />
