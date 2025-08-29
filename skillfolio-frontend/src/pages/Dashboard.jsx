@@ -21,18 +21,25 @@ const makeFileUrl = (maybeUrl) => {
 };
 
 export default function Dashboard() {
-  // existing store data (for Recent Certificates + general lists)
-  const certificates      = useAppStore((s) => s.certificates);
-  const projects          = useAppStore((s) => s.projects);
+  // store data
+  const certificates   = useAppStore((s) => s.certificates);
+  const projects       = useAppStore((s) => s.projects);
+  const goals          = useAppStore((s) => s.goals);
+
+  // loading / errors
+  const certsLoading   = useAppStore((s) => s.certificatesLoading);
+  const certsError     = useAppStore((s) => s.certificatesError);
+  const projectsLoading= useAppStore((s) => s.projectsLoading);
+  const projectsError  = useAppStore((s) => s.projectsError);
+  const goalsLoading   = useAppStore((s) => s.goalsLoading);
+  const goalsError     = useAppStore((s) => s.goalsError);
+
+  // actions
   const fetchCertificates = useAppStore((s) => s.fetchCertificates);
   const fetchProjects     = useAppStore((s) => s.fetchProjects);
+  const fetchGoals        = useAppStore((s) => s.fetchGoals);
 
-  const certsLoading      = useAppStore((s) => s.certificatesLoading);
-  const certsError        = useAppStore((s) => s.certificatesError);
-  const projectsLoading   = useAppStore((s) => s.projectsLoading);
-  const projectsError     = useAppStore((s) => s.projectsError);
-
-  // --- NEW: analytics states ---
+  // --- analytics states (from /api/analytics/*) ---
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState("");
@@ -41,16 +48,17 @@ export default function Dashboard() {
   const [goalsProgressLoading, setGoalsProgressLoading] = useState(false);
   const [goalsProgressError, setGoalsProgressError] = useState("");
 
-  // Fetch store lists (for recent certificates UI)
+  // Fetch store lists for recents
   useEffect(() => {
     fetchCertificates();
     fetchProjects();
-  }, [fetchCertificates, fetchProjects]);
+    fetchGoals();
+  }, [fetchCertificates, fetchProjects, fetchGoals]);
 
   // Fetch analytics summary
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
+    (async () => {
       setSummaryLoading(true);
       setSummaryError("");
       try {
@@ -68,15 +76,14 @@ export default function Dashboard() {
       } finally {
         if (!cancelled) setSummaryLoading(false);
       }
-    };
-    run();
+    })();
     return () => { cancelled = true; };
   }, []);
 
   // Fetch analytics goals progress
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
+    (async () => {
       setGoalsProgressLoading(true);
       setGoalsProgressError("");
       try {
@@ -95,8 +102,7 @@ export default function Dashboard() {
       } finally {
         if (!cancelled) setGoalsProgressLoading(false);
       }
-    };
-    run();
+    })();
     return () => { cancelled = true; };
   }, []);
 
@@ -104,7 +110,7 @@ export default function Dashboard() {
   // Prefer steps_progress_percent if present; else fall back to progress_percent.
   const goalProgress = useMemo(() => {
     if (!Array.isArray(goalsProgress) || goalsProgress.length === 0) return 0;
-    const vals = goalsProgress.map(g => {
+    const vals = goalsProgress.map((g) => {
       const a = Number(g?.steps_progress_percent);
       const b = Number(g?.progress_percent);
       if (!isNaN(a)) return a;
@@ -115,11 +121,19 @@ export default function Dashboard() {
     return Math.round(sum / goalsProgress.length);
   }, [goalsProgress]);
 
-  // recent 5 certificates (just slice, assuming BE already returns user-scoped)
-  const recentCertificates = useMemo(() => {
-    if (!Array.isArray(certificates)) return [];
-    return certificates.slice(0, 5);
-  }, [certificates]);
+  // recent 5 of each
+  const recentCertificates = useMemo(
+    () => (Array.isArray(certificates) ? certificates.slice(0, 5) : []),
+    [certificates]
+  );
+  const recentProjects = useMemo(
+    () => (Array.isArray(projects) ? projects.slice(0, 5) : []),
+    [projects]
+  );
+  const recentGoals = useMemo(
+    () => (Array.isArray(goals) ? goals.slice(0, 5) : []),
+    [goals]
+  );
 
   return (
     <div className="flex min-h-screen bg-background text-text">
@@ -142,7 +156,13 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Total Certificates */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
-            <div className="font-semibold mb-1">Total Certificates</div>
+            <div className="flex items-center justify-between">
+              <div className="font-semibold mb-1">Total Certificates</div>
+              {/* Always show "View all" */}
+              <Link to="/certificates" className="text-xs underline opacity-80 hover:opacity-100">
+                View all
+              </Link>
+            </div>
             {summaryLoading ? (
               <Loading compact />
             ) : summaryError ? (
@@ -156,7 +176,12 @@ export default function Dashboard() {
 
           {/* Total Projects */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
-            <div className="font-semibold mb-1">Total Projects</div>
+            <div className="flex items-center justify-between">
+              <div className="font-semibold mb-1">Total Projects</div>
+              <Link to="/projects" className="text-xs underline opacity-80 hover:opacity-100">
+                View all
+              </Link>
+            </div>
             {summaryLoading ? (
               <Loading compact />
             ) : summaryError ? (
@@ -170,7 +195,12 @@ export default function Dashboard() {
 
           {/* Goal Progress (avg across goals from /api/analytics/goals-progress/) */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
-            <div className="font-semibold mb-1">Goal Progress</div>
+            <div className="flex items-center justify-between">
+              <div className="font-semibold mb-1">Goal Progress</div>
+              <Link to="/goals" className="text-xs underline opacity-80 hover:opacity-100">
+                View all
+              </Link>
+            </div>
             {goalsProgressLoading ? (
               <Loading compact />
             ) : goalsProgressError ? (
@@ -186,9 +216,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Certificates (uses store list for richer preview) */}
-        <div className="bg-background/70 p-4 rounded border border-gray-700">
-          <h2 className="font-heading mb-2">Recent Certificates</h2>
+        {/* Recent Certificates */}
+        <div className="bg-background/70 p-4 rounded border border-gray-700 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading mb-2">Recent Certificates</h2>
+            <Link to="/certificates" className="text-xs underline opacity-80 hover:opacity-100">
+              View all
+            </Link>
+          </div>
 
           {certsLoading ? (
             <Loading />
@@ -257,6 +292,76 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Projects */}
+        <div className="bg-background/70 p-4 rounded border border-gray-700 mb-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading mb-2">Recent Projects</h2>
+            <Link to="/projects" className="text-xs underline opacity-80 hover:opacity-100">
+              View all
+            </Link>
+          </div>
+
+          {projectsLoading ? (
+            <Loading />
+          ) : projectsError ? (
+            <EmptyState message={projectsError} isError />
+          ) : projects.length === 0 ? (
+            <EmptyState message="No projects yet." />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {recentProjects.map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded border border-gray-700 bg-background/60 p-3"
+                >
+                  <div className="font-medium truncate">{p.title}</div>
+                  <div className="text-xs opacity-80 mt-1">
+                    Status: <span className="opacity-90">{p.status || "planned"}</span>
+                  </div>
+                  {p.description && (
+                    <div className="text-sm opacity-80 mt-2 line-clamp-3">{p.description}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent Goals */}
+        <div className="bg-background/70 p-4 rounded border border-gray-700">
+          <div className="flex items-center justify-between">
+            <h2 className="font-heading mb-2">Recent Goals</h2>
+            <Link to="/goals" className="text-xs underline opacity-80 hover:opacity-100">
+              View all
+            </Link>
+          </div>
+
+          {goalsLoading ? (
+            <Loading />
+          ) : goalsError ? (
+            <EmptyState message={goalsError} isError />
+          ) : goals.length === 0 ? (
+            <EmptyState message="No goals yet." />
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {recentGoals.map((g) => (
+                <div
+                  key={g.id}
+                  className="rounded border border-gray-700 bg-background/60 p-3"
+                >
+                  <div className="font-medium truncate">{g.title || "Untitled goal"}</div>
+                  <div className="text-xs opacity-80 mt-1">
+                    Target: {g.target_projects} • Deadline: {g.deadline}
+                  </div>
+                  <div className="mt-2">
+                    <ProgressBar value={g.steps_progress_percent ?? 0} label="Checklist progress" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
