@@ -8,33 +8,34 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./skillfolio-frontend
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Debug: confirm the files CI actually sees
-      - name: Show workspace files
+      # Debug: confirm we are in the nested folder and lockfile exists
+      - name: Show files
         run: |
           pwd
           ls -la
+          echo "---- repo root ----"
+          ls -la ..
+          echo "---- lockfile? ----"
+          test -f package-lock.json && echo "Found package-lock.json" || (echo "NO LOCKFILE HERE" && exit 1)
 
-      - name: Use Node
+      - name: Use Node (with npm cache)
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          # Be explicit so caching finds the lock file
-          cache-dependency-path: package-lock.json
+          # IMPORTANT: point to the lockfile in the nested folder
+          cache-dependency-path: skillfolio-frontend/package-lock.json
 
-      # If a lockfile exists, use npm ci; otherwise fallback to install
-      - name: Install (ci if lockfile, else install)
-        run: |
-          if [ -f frontend-skillfolio/package-lock.json ]; then
-            npm ci --prefix frontend;
-          else
-            echo "No package-lock.json found; falling back to npm install"
-            npm install
-          fi
+      - name: Install deps
+        run: npm ci
 
       - name: Run tests
         run: npm run test:ci
