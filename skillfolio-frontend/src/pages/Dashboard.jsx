@@ -1,10 +1,12 @@
-/* Docs: see docs/pages doc/Dashboard.jsx.md */
+/* Docs: see docs/pages/Dashboard.jsx.md */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import ProgressBar from "../components/ProgressBar";
+import Loading from "../components/Loading";
+import EmptyState from "../components/EmptyState";
 
 // Same helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
@@ -19,40 +21,101 @@ const makeFileUrl = (maybeUrl) => {
 };
 
 export default function Dashboard() {
-  // data
-  const certificates         = useAppStore((s) => s.certificates);
-  const projects             = useAppStore((s) => s.projects);
-  const goals                = useAppStore((s) => s.goals);
+  // existing store data (for Recent Certificates + general lists)
+  const certificates      = useAppStore((s) => s.certificates);
+  const projects          = useAppStore((s) => s.projects);
+  const fetchCertificates = useAppStore((s) => s.fetchCertificates);
+  const fetchProjects     = useAppStore((s) => s.fetchProjects);
 
-  // loading / errors
-  const certsLoading         = useAppStore((s) => s.certificatesLoading);
-  const certsError           = useAppStore((s) => s.certificatesError);
-  const projectsLoading      = useAppStore((s) => s.projectsLoading);
-  const projectsError        = useAppStore((s) => s.projectsError);
-  const goalsLoading         = useAppStore((s) => s.goalsLoading);
-  const goalsError           = useAppStore((s) => s.goalsError);
+  const certsLoading      = useAppStore((s) => s.certificatesLoading);
+  const certsError        = useAppStore((s) => s.certificatesError);
+  const projectsLoading   = useAppStore((s) => s.projectsLoading);
+  const projectsError     = useAppStore((s) => s.projectsError);
 
-  // actions
-  const fetchCertificates    = useAppStore((s) => s.fetchCertificates);
-  const fetchProjects        = useAppStore((s) => s.fetchProjects);
-  const fetchGoals           = useAppStore((s) => s.fetchGoals);
+  // --- NEW: analytics states ---
+  const [summary, setSummary] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
 
+  const [goalsProgress, setGoalsProgress] = useState([]); // array of goals w/ progress fields
+  const [goalsProgressLoading, setGoalsProgressLoading] = useState(false);
+  const [goalsProgressError, setGoalsProgressError] = useState("");
+
+  // Fetch store lists (for recent certificates UI)
   useEffect(() => {
-    // Load all so counts & recent are real on first paint
     fetchCertificates();
     fetchProjects();
-    fetchGoals();
-  }, [fetchCertificates, fetchProjects, fetchGoals]);
+  }, [fetchCertificates, fetchProjects]);
 
-  // Average checklist progress across goals (fallback 0)
+  // Fetch analytics summary
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setSummaryLoading(true);
+      setSummaryError("");
+      try {
+        const { data } = await api.get("/api/analytics/summary/");
+        if (!cancelled) setSummary(data);
+      } catch (e) {
+        if (!cancelled) {
+          const msg =
+            e?.response?.data?.detail ||
+            (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+            e?.message ||
+            "Failed to load analytics summary";
+          setSummaryError(msg);
+        }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Fetch analytics goals progress
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      setGoalsProgressLoading(true);
+      setGoalsProgressError("");
+      try {
+        const { data } = await api.get("/api/analytics/goals-progress/");
+        const items = Array.isArray(data) ? data : data?.results || [];
+        if (!cancelled) setGoalsProgress(items);
+      } catch (e) {
+        if (!cancelled) {
+          const msg =
+            e?.response?.data?.detail ||
+            (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+            e?.message ||
+            "Failed to load goals progress";
+          setGoalsProgressError(msg);
+        }
+      } finally {
+        if (!cancelled) setGoalsProgressLoading(false);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Average progress from /api/analytics/goals-progress/
+  // Prefer steps_progress_percent if present; else fall back to progress_percent.
   const goalProgress = useMemo(() => {
-    if (!Array.isArray(goals) || goals.length === 0) return 0;
-    const vals = goals.map((g) => Number(g?.steps_progress_percent || 0));
-    const sum = vals.reduce((a, b) => a + b, 0);
-    return Math.round(sum / goals.length);
-  }, [goals]);
+    if (!Array.isArray(goalsProgress) || goalsProgress.length === 0) return 0;
+    const vals = goalsProgress.map(g => {
+      const a = Number(g?.steps_progress_percent);
+      const b = Number(g?.progress_percent);
+      if (!isNaN(a)) return a;
+      if (!isNaN(b)) return b;
+      return 0;
+    });
+    const sum = vals.reduce((acc, v) => acc + v, 0);
+    return Math.round(sum / goalsProgress.length);
+  }, [goalsProgress]);
 
-  // recent 5 certificates (just slice, assuming BE returns user-scoped)
+  // recent 5 certificates (just slice, assuming BE already returns user-scoped)
   const recentCertificates = useMemo(() => {
     if (!Array.isArray(certificates)) return [];
     return certificates.slice(0, 5);
@@ -75,36 +138,45 @@ export default function Dashboard() {
       <main className="flex-1 p-6">
         <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
 
-        {/* Stats cards */}
+        {/* Stats cards — driven by analytics summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Total Certificates */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
             <div className="font-semibold mb-1">Total Certificates</div>
-            {certsLoading ? (
-              <div className="opacity-70">Loading…</div>
-            ) : certsError ? (
-              <div className="text-accent text-sm">Error: {certsError}</div>
+            {summaryLoading ? (
+              <Loading compact />
+            ) : summaryError ? (
+              <EmptyState message={summaryError} isError />
+            ) : summary ? (
+              <div className="text-2xl">{summary.certificates_count ?? 0}</div>
             ) : (
-              <div className="text-2xl">{certificates.length}</div>
+              <EmptyState message="No data yet." />
             )}
           </div>
 
+          {/* Total Projects */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
             <div className="font-semibold mb-1">Total Projects</div>
-            {projectsLoading ? (
-              <div className="opacity-70">Loading…</div>
-            ) : projectsError ? (
-              <div className="text-accent text-sm">Error: {projectsError}</div>
+            {summaryLoading ? (
+              <Loading compact />
+            ) : summaryError ? (
+              <EmptyState message={summaryError} isError />
+            ) : summary ? (
+              <div className="text-2xl">{summary.projects_count ?? 0}</div>
             ) : (
-              <div className="text-2xl">{projects.length}</div>
+              <EmptyState message="No data yet." />
             )}
           </div>
 
+          {/* Goal Progress (avg across goals from /api/analytics/goals-progress/) */}
           <div className="bg-background/70 p-4 rounded border border-gray-700">
             <div className="font-semibold mb-1">Goal Progress</div>
-            {goalsLoading ? (
-              <div className="opacity-70">Loading…</div>
-            ) : goalsError ? (
-              <div className="text-accent text-sm">Error: {goalsError}</div>
+            {goalsProgressLoading ? (
+              <Loading compact />
+            ) : goalsProgressError ? (
+              <EmptyState message={goalsProgressError} isError />
+            ) : goalsProgress.length === 0 ? (
+              <EmptyState message="No goals yet." />
             ) : (
               <>
                 <div className="text-2xl mb-1">{goalProgress}%</div>
@@ -114,21 +186,25 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Certificates */}
+        {/* Recent Certificates (uses store list for richer preview) */}
         <div className="bg-background/70 p-4 rounded border border-gray-700">
           <h2 className="font-heading mb-2">Recent Certificates</h2>
 
           {certsLoading ? (
-            <div className="opacity-70">Loading…</div>
+            <Loading />
           ) : certsError ? (
-            <div className="text-accent">Error: {certsError}</div>
+            <EmptyState message={certsError} isError />
           ) : certificates.length === 0 ? (
-            <div className="opacity-70">
-              No certificates yet.{" "}
-              <Link className="underline" to="/certificates">
-                Add your first one
-              </Link>.
-            </div>
+            <EmptyState
+              message={
+                <>
+                  No certificates yet.{" "}
+                  <Link className="underline" to="/certificates">
+                    Add your first one
+                  </Link>.
+                </>
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentCertificates.map((c) => {
