@@ -1,7 +1,3 @@
-export default function Loading({ compact = false }) {
-  return (
-    <div className={compact ? "opacity-70 text-sm" : "opacity-70"}>
-      Loading…
-    </div>
-  );
+export default function Loading({ text = "Loading..." }) {
+  return <div className="opacity-70">{text}</div>;
 }
