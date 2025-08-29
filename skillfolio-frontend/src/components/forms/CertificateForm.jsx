@@ -1,9 +1,19 @@
-/* Docs: see docs/components/CertificateForm.jsx.md */
-
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
 
-export default function CertificateForm() {
+/**
+ * CertificateForm
+ * - Create mode (default): uses store.createCertificate(form)
+ * - Edit mode (optional): pass `initial` + `onSubmit` + `submitLabel`
+ *   initial: { title, issuer, date_earned, file_upload? }
+ *   onSubmit: async (form) => void   // parent handles updateCertificate(...)
+ *   submitLabel: string              // e.g., "Save changes"
+ */
+export default function CertificateForm({
+  initial = null,
+  onSubmit = null,
+  submitLabel = "Add Certificate",
+}) {
   const createCertificate = useAppStore((s) => s.createCertificate);
 
   const fileRef = useRef(null);
@@ -11,20 +21,37 @@ export default function CertificateForm() {
     title: "",
     issuer: "",
     date_earned: "",
-    file: null,
+    file: null, // File for new upload (optional)
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const onSubmit = async (e) => {
+  // Prefill when editing
+  useEffect(() => {
+    if (initial) {
+      setForm({
+        title: initial.title ?? "",
+        issuer: initial.issuer ?? "",
+        date_earned: initial.date_earned ?? "",
+        file: null, // never prefill as File object
+      });
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }, [initial]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSubmitting(true);
     try {
-      await createCertificate(form);
-      // Reset form + clear file input
-      setForm({ title: "", issuer: "", date_earned: "", file: null });
-      if (fileRef.current) fileRef.current.value = "";
+      if (onSubmit) {
+        await onSubmit(form); // edit mode
+      } else {
+        await createCertificate(form); // create mode
+        // Reset after creating
+        setForm({ title: "", issuer: "", date_earned: "", file: null });
+        if (fileRef.current) fileRef.current.value = "";
+      }
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -32,7 +59,7 @@ export default function CertificateForm() {
           ? JSON.stringify(err.response.data)
           : err?.response?.data) ??
         err?.message ??
-        "Failed to create certificate";
+        "Request failed";
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -47,7 +74,7 @@ export default function CertificateForm() {
 
   return (
     <form
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       className="bg-background/80 border border-gray-700 p-4 rounded mb-6 max-w-xl grid gap-4"
     >
       <input
@@ -75,9 +102,7 @@ export default function CertificateForm() {
         ref={fileRef}
         type="file"
         className="rounded p-3 bg-background/60 border border-gray-700"
-        onChange={(e) =>
-          setForm({ ...form, file: e.target.files?.[0] || null })
-        }
+        onChange={(e) => setForm({ ...form, file: e.target.files?.[0] || null })}
         accept=".pdf,image/*"
       />
 
@@ -87,7 +112,7 @@ export default function CertificateForm() {
         disabled={disabled}
         className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition disabled:opacity-60"
       >
-        {submitting ? "Uploading…" : "Add Certificate"}
+        {submitting ? "Saving…" : submitLabel}
       </button>
     </form>
   );

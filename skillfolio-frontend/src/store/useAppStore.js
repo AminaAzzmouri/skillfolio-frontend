@@ -5,6 +5,14 @@
 import { create } from "zustand";
 import { api, setAuthToken, logoutApi } from "../lib/api";
 
+// ---- Certificates API helpers (new) ----
+import {
+  listCertificates,
+  createCertificateMultipart,
+  updateCertificate as apiUpdateCertificate,
+  deleteCertificate as apiDeleteCertificate,
+} from "./certificates";
+
 // Fallback id if needed (kept for any local/demo adders)
 const rid = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID
@@ -19,10 +27,10 @@ export const useAppStore = create((set, get) => ({
   certificatesLoading: false,
   certificatesError: null,
 
-  async fetchCertificates() {
+  async fetchCertificates(params) {
     set({ certificatesLoading: true, certificatesError: null });
     try {
-      const { data } = await api.get("/api/certificates/");
+      const data = await listCertificates(params);
       const items = Array.isArray(data) ? data : data?.results || [];
       set({ certificates: items, certificatesLoading: false });
     } catch (err) {
@@ -32,27 +40,39 @@ export const useAppStore = create((set, get) => ({
           ? JSON.stringify(err.response.data)
           : err?.response?.data) ??
         err?.message ??
-        "Failed to load certificates";
+        "Failed to fetch certificates";
       set({ certificatesLoading: false, certificatesError: msg });
     }
   },
 
   async createCertificate({ title, issuer, date_earned, file }) {
-    // multipart because of optional file
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("issuer", issuer);
-    fd.append("date_earned", date_earned);
-    if (file) fd.append("file_upload", file);
-
     set({ certificatesError: null });
-    const { data } = await api.post("/api/certificates/", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const created = await createCertificateMultipart({
+      title,
+      issuer,
+      date_earned,
+      file,
     });
-
     // Prepend for snappy UX
-    set((s) => ({ certificates: [data, ...s.certificates] }));
-    return data;
+    set((s) => ({ certificates: [created, ...s.certificates] }));
+    return created;
+  },
+
+  // NEW: PATCH /api/certificates/:id/
+  async updateCertificate(id, patch) {
+    const updated = await apiUpdateCertificate(id, patch);
+    set((s) => ({
+      certificates: (s.certificates ?? []).map((c) => (c.id === id ? updated : c)),
+    }));
+    return updated;
+  },
+
+  // NEW: DELETE /api/certificates/:id/
+  async deleteCertificate(id) {
+    await apiDeleteCertificate(id);
+    set((s) => ({
+      certificates: (s.certificates ?? []).filter((c) => c.id !== id),
+    }));
   },
 
   // -----------------------
