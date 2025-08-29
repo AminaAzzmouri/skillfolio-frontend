@@ -22,7 +22,7 @@ import {
 } from "./projects";
 
 // Fallback id if needed (kept for any local/demo adders)
-const rid = () =>
+const rid = () => 
   (typeof crypto !== "undefined" && crypto.randomUUID
     ? crypto.randomUUID()
     : Math.random().toString(36).slice(0, 10));
@@ -34,13 +34,20 @@ export const useAppStore = create((set, get) => ({
   certificates: [],
   certificatesLoading: false,
   certificatesError: null,
+  // NEW: pagination meta (for DRF {count, next, previous, results})
+  certificatesMeta: { count: 0 },
 
   async fetchCertificates(params) {
     set({ certificatesLoading: true, certificatesError: null });
     try {
       const data = await listCertificates(params);
       const items = Array.isArray(data) ? data : data?.results || [];
-      set({ certificates: items, certificatesLoading: false });
+      const count = Array.isArray(data) ? items.length : (data?.count ?? items.length);
+      set({
+        certificates: items,
+        certificatesMeta: { count },
+        certificatesLoading: false,
+      });
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -63,6 +70,8 @@ export const useAppStore = create((set, get) => ({
     });
     // Prepend for snappy UX
     set((s) => ({ certificates: [created, ...s.certificates] }));
+    // (Optional) optimistic meta bump
+    set((s) => ({ certificatesMeta: { count: (s.certificatesMeta?.count ?? 0) + 1 } }));
     return created;
   },
 
@@ -80,6 +89,8 @@ export const useAppStore = create((set, get) => ({
     await apiDeleteCertificate(id);
     set((s) => ({
       certificates: (s.certificates ?? []).filter((c) => c.id !== id),
+      // (Optional) optimistic meta decrement
+      certificatesMeta: { count: Math.max(0, (s.certificatesMeta?.count ?? 1) - 1) },
     }));
   },
 
@@ -89,13 +100,20 @@ export const useAppStore = create((set, get) => ({
   projects: [],
   projectsLoading: false,
   projectsError: null,
+  // NEW: pagination meta
+  projectsMeta: { count: 0 },
 
   async fetchProjects(params) {
     set({ projectsLoading: true, projectsError: null });
     try {
       const data = await listProjects(params);
       const items = Array.isArray(data) ? data : data?.results || [];
-      set({ projects: items, projectsLoading: false });
+      const count = Array.isArray(data) ? items.length : (data?.count ?? items.length);
+      set({
+        projects: items,
+        projectsMeta: { count },
+        projectsLoading: false,
+      });
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -141,6 +159,8 @@ export const useAppStore = create((set, get) => ({
 
     const created = await apiCreateProject(payload);
     set((s) => ({ projects: [created, ...s.projects] })); // prepend for snappy UX
+    // (Optional) optimistic meta bump
+    set((s) => ({ projectsMeta: { count: (s.projectsMeta?.count ?? 0) + 1 } }));
     return created;
   },
 
@@ -158,6 +178,8 @@ export const useAppStore = create((set, get) => ({
     await apiDeleteProject(id);
     set((s) => ({
       projects: (s.projects ?? []).filter((p) => p.id !== id),
+      // (Optional) optimistic meta decrement
+      projectsMeta: { count: Math.max(0, (s.projectsMeta?.count ?? 1) - 1) },
     }));
   },
 

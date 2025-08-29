@@ -7,6 +7,7 @@ import { api } from "../lib/api";
 import SearchBar from "../components/SearchBar";
 import Filters from "../components/Filters";
 import SortSelect from "../components/SortSelect";
+import Pagination from "../components/Pagination";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -38,6 +39,7 @@ export default function CertificatesPage() {
     certificates,
     certificatesLoading,
     certificatesError,
+    certificatesMeta, // NEW
     fetchCertificates,
     updateCertificate,
     deleteCertificate,
@@ -45,6 +47,7 @@ export default function CertificatesPage() {
     certificates: s.certificates,
     certificatesLoading: s.certificatesLoading,
     certificatesError: s.certificatesError,
+    certificatesMeta: s.certificatesMeta, // NEW
     fetchCertificates: s.fetchCertificates,
     updateCertificate: s.updateCertificate,
     deleteCertificate: s.deleteCertificate,
@@ -250,6 +253,21 @@ export default function CertificatesPage() {
           <CertificateForm submitLabel="Add Certificate" />
         </div>
       )}
+
+      {/* Pagination */}
+      <div className="max-w-xl mt-4">
+        <Pagination
+          page={Number(sp.get("page") || 1)}
+          pageSize={10}
+          total={certificatesMeta?.count || 0}
+          loading={certificatesLoading}
+          onPageChange={(n) => {
+            const next = new URLSearchParams(sp);
+            next.set("page", String(n));
+            setSp(next);
+          }}
+        />
+      </div>
 
       {/* Delete confirmation */}
       <ConfirmDialog

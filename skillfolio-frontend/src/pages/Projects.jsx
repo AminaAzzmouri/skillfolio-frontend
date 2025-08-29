@@ -6,6 +6,7 @@ import { useAppStore } from "../store/useAppStore";
 import SearchBar from "../components/SearchBar";
 import Filters from "../components/Filters";
 import SortSelect from "../components/SortSelect";
+import Pagination from "../components/Pagination";
 import ProjectForm from "../components/forms/ProjectForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -40,6 +41,7 @@ export default function ProjectsPage() {
     projects,
     projectsLoading,
     projectsError,
+    projectsMeta, // NEW
     fetchProjects,
     createProject,
     updateProject,
@@ -52,6 +54,7 @@ export default function ProjectsPage() {
     projects: s.projects,
     projectsLoading: s.projectsLoading,
     projectsError: s.projectsError,
+    projectsMeta: s.projectsMeta, // NEW
     fetchProjects: s.fetchProjects,
     createProject: s.createProject,
     updateProject: s.updateProject,
@@ -69,11 +72,12 @@ export default function ProjectsPage() {
   const [submitError, setSubmitError] = useState("");
   const formRef = useRef(null);
 
-  // Load dropdown data + list on param changes
+  // Load dropdown data
   useEffect(() => {
     fetchCertificates();
   }, [fetchCertificates]);
 
+  // Fetch list when query params change
   useEffect(() => {
     fetchProjects({ search, ordering, filters, page });
   }, [fetchProjects, search, ordering, page, filters.certificate, filters.status]);
@@ -114,8 +118,7 @@ export default function ProjectsPage() {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
-        err?.message ??
-        "Failed to create project";
+        err?.message ?? "Failed to create project";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -133,8 +136,7 @@ export default function ProjectsPage() {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
-        err?.message ??
-        "Failed to update project";
+        err?.message ?? "Failed to update project";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -265,6 +267,21 @@ export default function ProjectsPage() {
           />
         </div>
       )}
+
+      {/* Pagination */}
+      <div className="max-w-xl mt-4">
+        <Pagination
+          page={Number(sp.get("page") || 1)}
+          pageSize={10}
+          total={projectsMeta?.count || 0}
+          loading={projectsLoading}
+          onPageChange={(n) => {
+            const next = new URLSearchParams(sp);
+            next.set("page", String(n));
+            setSp(next);
+          }}
+        />
+      </div>
 
       <ConfirmDialog
         open={!!confirmDeleteId}

@@ -1,3 +1,5 @@
+// /* Docs: see docs/components/ConfirmDialog.jsx.md
+
 /**
  * Minimal generic confirm dialog.
  * Usage:
