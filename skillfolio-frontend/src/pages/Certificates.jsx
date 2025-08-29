@@ -1,4 +1,4 @@
-/* Docs: see docs/pages/Certificates.jsx.md */
+/* Docs: see docs/pages doc/Certificates.jsx.md */
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useAppStore } from "../store/useAppStore";

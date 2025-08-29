@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Home.jsx.md */
+/* Docs: see docs/pages doc/Home.jsx.md */
 
 import { useEffect, useState } from "react";
 

@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Register.jsx.md */
+/* Docs: see docs/pages doc/Register.jsx.md */
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";

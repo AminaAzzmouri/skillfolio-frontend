@@ -1,111 +1,78 @@
-**Projects.jsx**:
+## Purpose
+===============================================================================
+This page lets users **create, list, edit, and delete projects** and optionally
+link each project to a certificate (by certificate ID). It uses the live API:
 
-## Purpose:
+  • GET /api/projects/           — list projects
+  • POST /api/projects/          — create a project
+  • PATCH /api/projects/{id}/    — update a project
+  • DELETE /api/projects/{id}/   — delete a project
+  • GET /api/certificates/       — populate link dropdown
+
+Auth is global (JWT). The axios helper injects `Authorization: Bearer <access>`.
 ===============================================================================
 
-This page lets users **create and list projects** and optionally link each project
-to a certificate (by certificate ID). It now uses the **live backend API**:
-
-  • `GET /api/projects/` — list projects  
-  • `POST /api/projects/` — create a project  
-  • Reads certificates from `GET /api/certificates/` to populate the link dropdown
-
-Authentication is handled globally (JWT), so requests include
-`Authorization: Bearer <access>` via the axios helper.
-
+## Structure
 ===============================================================================
+### State (Zustand: useAppStore)
+Projects slice:
+  - projects / projectsLoading / projectsError
+  - fetchProjects()   → GET /api/projects/
+  - createProject(p)  → POST /api/projects/
+  - updateProject(id, patch) → PATCH /api/projects/:id/
+  - deleteProject(id) → DELETE /api/projects/:id/
 
-## Structure:
-===============================================================================
+Certificates slice (for dropdown):
+  - certificates / certificatesLoading / certificatesError
+  - fetchCertificates() → GET /api/certificates/
 
-### State (Zustand: useAppStore):
-  • Projects slice:
-    - `projects` / `projectsLoading` / `projectsError`
-    - `fetchProjects()` — GET `/api/projects/`
-    - `createProject({ title, description, certificateId })` — POST `/api/projects/`
-      (sends `{ title, description, certificate: certificateId || null }`)
-
-  • Certificates slice (for dropdown):
-    - `certificates` / `certificatesLoading` / `certificatesError`
-    - `fetchCertificates()` — GET `/api/certificates/`
-
-### Local component state:
-  • `form` → `{ title, description, certificateId }`  
-  • `submitting` → disables submit button while posting  
-  • `submitError` → shows API error inline if creation fails
-
-### Effects:
-  • On mount:
-    1) `fetchCertificates()` — populate the dropdown
-    2) `fetchProjects()` — load the list
+### Local UI state:
+  - showCreate: toggle for create form
+  - editingId: which project is currently in edit mode
+  - confirmDeleteId: which project is pending deletion
+  - submitting / submitError: form submit states
 
 ### Certificate title mapping:
-  • Use `useMemo` to build a `Map<id, title>` from `certificates` so each project row
-    can show the certificate title (API returns only `certificate` id).
-
+  - useMemo to map certificate id → title so rows can display it
 ===============================================================================
 
-## Form & Submission:
+## Form & Submission
 ===============================================================================
-
 Fields:
-  - Project Title (required)
-  - Work type (select: individual | team)
-  - Duration (short text, e.g., "3 weeks")
-  - Primary goal (select: practice_skill, deliver_feature, build_demo, solve_problem)
-  - Challenges faced (short textarea)
-  - Skills/tools used (short comma-separated list)
-  - Outcome/impact (short textarea)
-  - Skills to practice more (short comma-separated list)
-  - Auto-generated Description (preview, editable)
-  - Status is now part of the form (same enum values as backend).
-  - Projects list is rendered first, with a button at the bottom to toggle form visibility.
+  - title (required)
+  - status (planned | in_progress | completed)
+  - work_type (individual | team)
+  - duration_text (short string)
+  - primary_goal (practice_skill | deliver_feature | build_demo | solve_problem)
+  - challenges_short / skills_used / outcome_short / skills_to_improve
+  - certificateId (optional)
+  - description (auto-generated preview, editable)
 
 Submit flow:
-  1. User fills guided fields
-  2. Component builds a live preview string (auto-description) following template:
-      ${title} — ${work_type === 'team' ? 'Team project' : 'Individual project'} (~${duration_text || 'N/A'}).
-      Goal: ${goalPhrase}.
-      Challenges: ${challenges_short || 'N/A'}.
-      Skills/Tools: ${skills_used || 'N/A'}.
-      Outcome: ${outcome_short || 'N/A'}.
-      Next focus: ${skills_to_improve || 'N/A'}.
-      Where `goalPhrase` maps from `primary_goal`.
-  3. User may edit the description before submit.
-  4. Submit sends payload with guided fields + final description.
-
+  1) Live preview composed from guided fields; user can edit description
+  2) POST sends JSON with guided fields + final description
+  3) After success: page prepends new item
+  4) Edit uses inline <ProjectForm> with initial data, PATCH on save
+  5) Delete uses a confirm dialog
 ===============================================================================
 
-## UI States:
+## UI States
+===============================================================================
+- Loading: “Loading projects…”
+- Error: concise message for both list and form
+- Empty: “No projects yet.”
+- Create form is toggled by a button; edit form is inline per row
 ===============================================================================
 
-- Loading:
-    • “Loading certificates…” while certificates fetch  
-    • “Loading projects…” while projects fetch  
-- Error:
-    • Render concise errors when `certificatesError` or `projectsError` is set  
-    • Show inline error message if form submission fails  
-- Empty:
-    • If `projects` is empty after loading, show “No projects yet—add your first above.”
-- The “Add Project” form no longer always shows — it’s toggled
-
+## Role in Project
+===============================================================================
+Projects demonstrate applying learning (certificates) to real work.
+Feeds dashboard stats; mirrors Certificates CRUD pattern for consistency.
 ===============================================================================
 
-## Role in Project:
+## Future Enhancements
 ===============================================================================
-
-Projects showcase the **applied side of learning**—how certificates translate into
-real work. The page complements Certificates by feeding the Dashboard’s project
-stats (total projects, recent items) and establishes the list + create pattern
-that other entities can follow.
-
-===============================================================================
-
-## Future Enhancements:
-===============================================================================
-
-- Edit/delete (PUT/PATCH/DELETE)  
-- Filtering & search  
-- Richer rendering (markdown, attachments, screenshots)  
-- **UI polish: chips/multi-selects for challenges and skills**  
-- Pagination support  
+- Search, filters, ordering
+- Project detail page with richer rendering
+- Markdown description support, attachments/screenshots
+- Pagination and infinite scroll

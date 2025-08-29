@@ -1,4 +1,4 @@
-/* Docs: see docs/components/LandingPage.jsx.md */
+/* Docs: see docs/pages doc/LandingPage.jsx.md */
 
 import { Link } from "react-router-dom";
 

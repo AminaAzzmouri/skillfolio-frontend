@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Login.jsx.md */
+/* Docs: see docs/pages doc/Login.jsx.md */
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";

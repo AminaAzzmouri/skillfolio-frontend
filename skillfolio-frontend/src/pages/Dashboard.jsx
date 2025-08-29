@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Dashboard.jsx.md */
+/* Docs: see docs/pages doc/Dashboard.jsx.md */
 
 import { useEffect, useMemo } from "react";
 import { useAppStore } from "../store/useAppStore.js";

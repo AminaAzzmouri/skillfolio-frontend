@@ -1,17 +1,25 @@
-/* Docs: see docs/State/useAppStore.js.md */
+/* Docs: see docs/store/useAppStore.js.md */
 
 // Zustand store: JWT auth + certificates (API) + projects (API) + bootstrapping.
 
 import { create } from "zustand";
 import { api, setAuthToken, logoutApi } from "../lib/api";
 
-// ---- Certificates API helpers (new) ----
+// ---- Certificates API helpers ----
 import {
   listCertificates,
   createCertificateMultipart,
   updateCertificate as apiUpdateCertificate,
   deleteCertificate as apiDeleteCertificate,
 } from "./certificates";
+
+// ---- Projects API helpers (new) ----
+import {
+  listProjects,
+  createProject as apiCreateProject,
+  updateProject as apiUpdateProject,
+  deleteProject as apiDeleteProject,
+} from "./projects";
 
 // Fallback id if needed (kept for any local/demo adders)
 const rid = () =>
@@ -58,7 +66,7 @@ export const useAppStore = create((set, get) => ({
     return created;
   },
 
-  // NEW: PATCH /api/certificates/:id/
+  // PATCH /api/certificates/:id/
   async updateCertificate(id, patch) {
     const updated = await apiUpdateCertificate(id, patch);
     set((s) => ({
@@ -67,7 +75,7 @@ export const useAppStore = create((set, get) => ({
     return updated;
   },
 
-  // NEW: DELETE /api/certificates/:id/
+  // DELETE /api/certificates/:id/
   async deleteCertificate(id) {
     await apiDeleteCertificate(id);
     set((s) => ({
@@ -76,16 +84,16 @@ export const useAppStore = create((set, get) => ({
   },
 
   // -----------------------
-  // Projects (NOW LIVE API)
+  // Projects (LIVE API)
   // -----------------------
   projects: [],
   projectsLoading: false,
   projectsError: null,
 
-  async fetchProjects() {
+  async fetchProjects(params) {
     set({ projectsLoading: true, projectsError: null });
     try {
-      const { data } = await api.get("/api/projects/");
+      const data = await listProjects(params);
       const items = Array.isArray(data) ? data : data?.results || [];
       set({ projects: items, projectsLoading: false });
     } catch (err) {
@@ -95,13 +103,13 @@ export const useAppStore = create((set, get) => ({
           ? JSON.stringify(err.response.data)
           : err?.response?.data) ??
         err?.message ??
-        "Failed to load projects";
+        "Failed to fetch projects";
       set({ projectsLoading: false, projectsError: msg });
     }
   },
 
   // DRF ProjectSerializer exposes fields="__all__"
-  // We now send guided fields + status; BE expects 'certificate' key (ID or null).
+  // We send guided fields + status; BE expects 'certificate' key (ID or null).
   async createProject({
     title,
     description,
@@ -131,9 +139,26 @@ export const useAppStore = create((set, get) => ({
       skills_to_improve,
     };
 
-    const { data } = await api.post("/api/projects/", payload);
-    set((s) => ({ projects: [data, ...s.projects] })); // prepend for snappy UX
-    return data;
+    const created = await apiCreateProject(payload);
+    set((s) => ({ projects: [created, ...s.projects] })); // prepend for snappy UX
+    return created;
+  },
+
+  // NEW: PATCH /api/projects/:id/
+  async updateProject(id, patch) {
+    const updated = await apiUpdateProject(id, patch);
+    set((s) => ({
+      projects: (s.projects ?? []).map((p) => (p.id === id ? updated : p)),
+    }));
+    return updated;
+  },
+
+  // NEW: DELETE /api/projects/:id/
+  async deleteProject(id) {
+    await apiDeleteProject(id);
+    set((s) => ({
+      projects: (s.projects ?? []).filter((p) => p.id !== id),
+    }));
   },
 
   // -----------------------
