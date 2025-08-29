@@ -1,16 +1,38 @@
-/* Docs: see docs/pages doc/Certificates.jsx.md */
+/* Docs: see docs/pages/Certificates.jsx.md */
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { api } from "../lib/api";
+import SearchBar from "../components/SearchBar";
+import Filters from "../components/Filters";
+import SortSelect from "../components/SortSelect";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
 // Best-effort helpers to detect previewable file types by extension
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
-const isPdfUrl   = (url) => /\.pdf$/i.test(url || "");
+const isPdfUrl = (url) => /\.pdf$/i.test(url || "");
 
-export default function Certificates() {
+const certSortOptions = [
+  { value: "", label: "Sort…" },
+  { value: "date_earned", label: "Date (oldest)" },
+  { value: "-date_earned", label: "Date (newest)" },
+  { value: "title", label: "Title (A→Z)" },
+  { value: "-title", label: "Title (Z→A)" },
+];
+
+export default function CertificatesPage() {
+  // URL params (search / filters / ordering / pagination)
+  const [sp, setSp] = useSearchParams();
+  const search = sp.get("search") || "";
+  const ordering = sp.get("ordering") || "";
+  const page = sp.get("page") || 1;
+  const filters = {
+    issuer: sp.get("issuer") || "",
+    date_earned: sp.get("date_earned") || "",
+  };
+
   // store state + actions
   const {
     certificates,
@@ -42,26 +64,28 @@ export default function Certificates() {
     return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
   };
 
-  // Newest first by date_earned (fallback to original order if missing)
-  const orderedCertificates = useMemo(() => {
-    return [...certificates].sort((a, b) => {
-      const da = a?.date_earned ?? "";
-      const db = b?.date_earned ?? "";
-      return db.localeCompare(da);
-    });
-  }, [certificates]);
-
-  // load from API on mount
+  // Fetch whenever query params change
   useEffect(() => {
-    fetchCertificates();
-  }, [fetchCertificates]);
+    fetchCertificates({ search, ordering, filters, page });
+  }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned]);
 
-  // scroll when opening the form
+  // Scroll when opening the form
   useEffect(() => {
     if (showForm && formRef.current) {
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [showForm]);
+
+  // Helper to write params (and reset page)
+  const writeParams = (patch) => {
+    const next = new URLSearchParams(sp);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === "" || v == null) next.delete(k);
+      else next.set(k, v);
+    });
+    next.delete("page");
+    setSp(next);
+  };
 
   const handleEditSubmit = async (id, form) => {
     // form has: { title, issuer, date_earned, file? }
@@ -84,34 +108,48 @@ export default function Certificates() {
     <div className="min-h-screen bg-background text-text p-6">
       <h1 className="font-heading text-2xl mb-4">Certificates</h1>
 
+      {/* Controls: Search / Filters / Sort */}
+      <div className="grid gap-3 mb-4 max-w-xl">
+        <SearchBar
+          value={search}
+          onChange={(v) => writeParams({ search: v })}
+          placeholder="Search certificates (title/issuer)…"
+        />
+        <Filters
+          type="certificates"
+          value={filters}
+          onChange={(f) =>
+            writeParams({
+              issuer: f.issuer || "",
+              date_earned: f.date_earned || "",
+            })
+          }
+        />
+        <SortSelect
+          value={ordering}
+          options={certSortOptions}
+          onChange={(v) => writeParams({ ordering: v || "" })}
+        />
+      </div>
+
       {/* List states FIRST */}
-      {certificatesLoading && (
-        <div className="opacity-80 mb-4">Loading certificates…</div>
-      )}
+      {certificatesLoading && <div className="opacity-80 mb-4">Loading certificates…</div>}
 
-      {certificatesError && (
-        <div className="text-accent mb-4">Error: {certificatesError}</div>
-      )}
+      {certificatesError && <div className="text-accent mb-4">Error: {certificatesError}</div>}
 
-      {!certificatesLoading &&
-        !certificatesError &&
-        orderedCertificates.length === 0 && (
-          <div className="opacity-80 mb-2">No certificates yet.</div>
-        )}
+      {!certificatesLoading && !certificatesError && certificates.length === 0 && (
+        <div className="opacity-80 mb-2">No certificates yet.</div>
+      )}
 
       <ul className="space-y-2 max-w-xl mb-6">
-        {orderedCertificates.map((c) => {
+        {certificates.map((c) => {
           const url = makeFileUrl(c.file_upload);
           const showImg = url && isImageUrl(url);
           const showPdf = url && isPdfUrl(url);
-
           const isEditing = editingId === c.id;
 
           return (
-            <li
-              key={c.id}
-              className="p-3 rounded border border-gray-700 bg-background/70"
-            >
+            <li key={c.id} className="p-3 rounded border border-gray-700 bg-background/70">
               {/* VIEW MODE */}
               {!isEditing && (
                 <>
@@ -157,12 +195,7 @@ export default function Certificates() {
                             height="300"
                             className="rounded border border-gray-700"
                           >
-                            <a
-                              className="text-xs underline"
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
+                            <a className="text-xs underline" href={url} target="_blank" rel="noreferrer">
                               Open PDF
                             </a>
                           </object>
@@ -170,12 +203,7 @@ export default function Certificates() {
                       ) : null}
 
                       {/* Always offer a link */}
-                      <a
-                        className="text-xs mt-2 inline-block underline"
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a className="text-xs mt-2 inline-block underline" href={url} target="_blank" rel="noreferrer">
                         View file
                       </a>
                     </>

@@ -1,12 +1,25 @@
-/* Docs: see docs/store doc/projects
-.js.md */
+/* Docs: see docs/store/projects.js.md */
 
 import { api } from "../lib/api";
 
-// GET /api/projects/
-export async function listProjects(params = {}) {
-  const res = await api.get("/api/projects/", { params });
-  return res.data;
+const qs = (obj = {}) =>
+  Object.entries(obj)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+
+// GET /api/projects/?page=&search=&ordering=&certificate=&status=
+export async function listProjects({ page, search, filters = {}, ordering } = {}) {
+  const params = {
+    page,
+    search,
+    ordering, // 'date_created', '-date_created', 'title', '-title'
+    ...filters, // certificate, status, etc.
+  };
+  const q = qs(params);
+  const url = `/api/projects/${q ? `?${q}` : ""}`;
+  const { data } = await api.get(url);
+  return data; // array or { results: [...] }
 }
 
 // POST /api/projects/
@@ -25,8 +38,8 @@ export async function createProject(payload) {
     outcome_short: payload.outcome_short ?? null,
     skills_to_improve: payload.skills_to_improve ?? null,
   };
-  const res = await api.post("/api/projects/", body);
-  return res.data;
+  const { data } = await api.post("/api/projects/", body);
+  return data;
 }
 
 // PATCH /api/projects/:id/
@@ -36,8 +49,8 @@ export async function updateProject(id, patch) {
     body.certificate = body.certificateId || null;
     delete body.certificateId;
   }
-  const res = await api.patch(`/api/projects/${id}/`, body);
-  return res.data;
+  const { data } = await api.patch(`/api/projects/${id}/`, body);
+  return data;
 }
 
 // DELETE /api/projects/:id/

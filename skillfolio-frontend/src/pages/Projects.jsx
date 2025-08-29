@@ -1,7 +1,11 @@
-/* Docs: see docs/pages doc/Projects.jsx.md */
+/* Docs: see docs/pages/Projects.jsx.md */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
+import SearchBar from "../components/SearchBar";
+import Filters from "../components/Filters";
+import SortSelect from "../components/SortSelect";
 import ProjectForm from "../components/forms/ProjectForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
@@ -12,12 +16,37 @@ function formatDateLong(iso) {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
+const projSortOptions = [
+  { value: "", label: "Sort…" },
+  { value: "date_created", label: "Created (oldest)" },
+  { value: "-date_created", label: "Created (newest)" },
+  { value: "title", label: "Title (A→Z)" },
+  { value: "-title", label: "Title (Z→A)" },
+];
+
 export default function ProjectsPage() {
+  // URL params (search / filters / ordering / pagination)
+  const [sp, setSp] = useSearchParams();
+  const search = sp.get("search") || "";
+  const ordering = sp.get("ordering") || "";
+  const page = sp.get("page") || 1;
+  const filters = {
+    certificate: sp.get("certificate") || "",
+    status: sp.get("status") || "",
+  };
+
   // Store reads
   const {
-    projects, projectsLoading, projectsError,
-    fetchProjects, createProject, updateProject, deleteProject,
-    certificates, certificatesLoading, certificatesError,
+    projects,
+    projectsLoading,
+    projectsError,
+    fetchProjects,
+    createProject,
+    updateProject,
+    deleteProject,
+    certificates,
+    certificatesLoading,
+    certificatesError,
     fetchCertificates,
   } = useAppStore((s) => ({
     projects: s.projects,
@@ -40,10 +69,14 @@ export default function ProjectsPage() {
   const [submitError, setSubmitError] = useState("");
   const formRef = useRef(null);
 
+  // Load dropdown data + list on param changes
   useEffect(() => {
     fetchCertificates();
-    fetchProjects();
-  }, [fetchCertificates, fetchProjects]);
+  }, [fetchCertificates]);
+
+  useEffect(() => {
+    fetchProjects({ search, ordering, filters, page });
+  }, [fetchProjects, search, ordering, page, filters.certificate, filters.status]);
 
   // Map certificate id -> title
   const certTitleById = useMemo(() => {
@@ -59,6 +92,17 @@ export default function ProjectsPage() {
     }
   }, [showCreate]);
 
+  // Helper to write params (and reset page)
+  const writeParams = (patch) => {
+    const next = new URLSearchParams(sp);
+    Object.entries(patch).forEach(([k, v]) => {
+      if (v === "" || v == null) next.delete(k);
+      else next.set(k, v);
+    });
+    next.delete("page");
+    setSp(next);
+  };
+
   // Create
   const handleCreate = async (payload) => {
     setSubmitError("");
@@ -70,7 +114,8 @@ export default function ProjectsPage() {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
-        err?.message ?? "Failed to create project";
+        err?.message ??
+        "Failed to create project";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -88,7 +133,8 @@ export default function ProjectsPage() {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
-        err?.message ?? "Failed to update project";
+        err?.message ??
+        "Failed to update project";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -105,6 +151,32 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-screen bg-background text-text p-6">
       <h1 className="font-heading text-2xl mb-4">Projects</h1>
+
+      {/* Controls: Search / Filters / Sort */}
+      <div className="grid gap-3 mb-4 max-w-xl">
+        <SearchBar
+          value={search}
+          onChange={(v) => writeParams({ search: v })}
+          placeholder="Search projects (title/description)…"
+        />
+        <Filters
+          type="projects"
+          value={filters}
+          onChange={(f) =>
+            writeParams({
+              certificate: f.certificate || "",
+              status: f.status || "",
+            })
+          }
+          certificates={certificates}
+          certificatesLoading={certificatesLoading}
+        />
+        <SortSelect
+          value={ordering}
+          options={projSortOptions}
+          onChange={(v) => writeParams({ ordering: v || "" })}
+        />
+      </div>
 
       <div className="max-w-xl mb-6">
         {projectsLoading ? (
@@ -171,9 +243,7 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {certificatesError && (
-        <div className="text-accent mb-4">Certificates error: {certificatesError}</div>
-      )}
+      {certificatesError && <div className="text-accent mb-4">Certificates error: {certificatesError}</div>}
 
       <div className="max-w-xl">
         <button

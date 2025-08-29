@@ -1,11 +1,25 @@
-/* Docs: see docs/store doc/certificates.js.md */
+/* Docs: see docs/store/certificates.js.md */
 
 import { api } from "../lib/api";
 
-// GET /api/certificates/?... (supports filters later)
-export async function listCertificates(params = {}) {
-  const res = await api.get("/api/certificates/", { params });
-  return res.data;
+const qs = (obj = {}) =>
+  Object.entries(obj)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+
+// GET /api/certificates/?page=&search=&ordering=&issuer=&date_earned=
+export async function listCertificates({ page, search, filters = {}, ordering } = {}) {
+  const params = {
+    page,
+    search,
+    ordering, // 'date_earned', '-date_earned', 'title', '-title'
+    ...filters, // issuer, date_earned, etc.
+  };
+  const q = qs(params);
+  const url = `/api/certificates/${q ? `?${q}` : ""}`;
+  const { data } = await api.get(url);
+  return data; // array or { results: [...] }
 }
 
 // POST /api/certificates/ (multipart)
@@ -15,16 +29,15 @@ export async function createCertificateMultipart({ title, issuer, date_earned, f
   fd.append("issuer", issuer);
   fd.append("date_earned", date_earned);
   if (file) fd.append("file_upload", file);
-  const res = await api.post("/api/certificates/", fd, {
+  const { data } = await api.post("/api/certificates/", fd, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return res.data;
+  return data;
 }
 
-// PATCH /api/certificates/:id/ (JSON or multipart)
+// PATCH /api/certificates/:id/ (smart: JSON or multipart if file present)
 export async function updateCertificate(id, payload) {
-  // If payload includes a File, use multipart; otherwise JSON is fine
-  if (payload.file instanceof File) {
+  if (payload?.file instanceof File) {
     const fd = new FormData();
     for (const [k, v] of Object.entries(payload)) {
       if (k === "file") {
@@ -33,13 +46,13 @@ export async function updateCertificate(id, payload) {
         fd.append(k, v);
       }
     }
-    const res = await api.patch(`/api/certificates/${id}/`, fd, {
+    const { data } = await api.patch(`/api/certificates/${id}/`, fd, {
       headers: { "Content-Type": "multipart/form-data" },
     });
-    return res.data;
+    return data;
   } else {
-    const res = await api.patch(`/api/certificates/${id}/`, payload);
-    return res.data;
+    const { data } = await api.patch(`/api/certificates/${id}/`, payload);
+    return data;
   }
 }
 
