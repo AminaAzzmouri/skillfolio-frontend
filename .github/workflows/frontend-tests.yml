@@ -10,29 +10,29 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./skillfolio-frontend
+        working-directory: SKILLFOLIO-FRONTEND/skillfolio-frontend
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Debug: confirm we are in the nested folder and lockfile exists
-      - name: Show files
+      # Prove where the lockfile actually is (from repo root)
+      - name: Show files (repo root)
         run: |
           pwd
           ls -la
-          echo "---- repo root ----"
-          ls -la ..
-          echo "---- lockfile? ----"
-          test -f package-lock.json && echo "Found package-lock.json" || (echo "NO LOCKFILE HERE" && exit 1)
+          echo "---- app folder ----"
+          ls -la SKILLFOLIO-FRONTEND || true
+          echo "---- lockfile check ----"
+          find . -maxdepth 3 -name "package-lock.json" -print
 
       - name: Use Node (with npm cache)
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'        # LTS (you can use '22' or '24' too)
           cache: 'npm'
-          # IMPORTANT: point to the lockfile in the nested folder
-          cache-dependency-path: skillfolio-frontend/package-lock.json
+          # MUST be relative to REPO ROOT and match the *actual* path exactly:
+          cache-dependency-path: SKILLFOLIO-FRONTEND/skillfolio-frontend/package-lock.json
 
       - name: Install deps
         run: npm ci
