@@ -1,9 +1,8 @@
 name: Frontend Tests
 
 on:
-  workflow_dispatch: {}
   push:
-    branches: [ "**" ]
+    branches: ["**"]
   pull_request:
 
 jobs:
@@ -13,14 +12,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Debug: confirm the files CI actually sees
+      - name: Show workspace files
+        run: |
+          pwd
+          ls -la
+
       - name: Use Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
+          # Be explicit so caching finds the lock file
+          cache-dependency-path: package-lock.json
 
-      - name: Install
-        run: npm ci
+      # If a lockfile exists, use npm ci; otherwise fallback to install
+      - name: Install (ci if lockfile, else install)
+        run: |
+          if [ -f frontend-skillfolio/package-lock.json ]; then
+            npm ci --prefix frontend;
+          else
+            echo "No package-lock.json found; falling back to npm install"
+            npm install
+          fi
 
       - name: Run tests
         run: npm run test:ci
