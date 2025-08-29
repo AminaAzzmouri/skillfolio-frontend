@@ -2,7 +2,7 @@ name: Frontend Tests
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
 
 jobs:
@@ -16,27 +16,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Prove where the lockfile actually is (from repo root)
       - name: Show files (debug)
         run: |
+          echo "PWD (repo root):"
           pwd
-          echo "---- list repo root ----"
+          echo "--- list repo root ---"
           ls -la
-          echo "---- list app dir ----"
+          echo "--- list app dir ---"
           ls -la skillfolio-frontend || true
           echo "--- lockfile probe ---"
           find . -maxdepth 3 -name "package-lock.json" -print
 
-      - name: Use Node (with npm cache)
+      - name: Use Node
         uses: actions/setup-node@v4
         with:
-          node-version: '24'        # LTS (you can use '22' or '24' too)
-          # cache: 'npm'
-          # MUST be relative to REPO ROOT and match the *actual* path exactly:
-          # cache-dependency-path: SKILLFOLIO-FRONTEND/skillfolio-frontend/package-lock.json
+          node-version: '20'   # or '24' if you want to match local
 
-      - name: Install deps
+      - name: Install
         run: npm ci
 
-      - name: Run tests
+      - name: Test (CI)
         run: npm run test:ci
