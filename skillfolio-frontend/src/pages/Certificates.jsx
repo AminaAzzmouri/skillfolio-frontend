@@ -1,5 +1,4 @@
 /* Docs: see docs/pages/Certificates.jsx.md */
-// NEW: accepts `?id=<pk>` to filter list to a single certificate (used by Projects “View certificate” link).
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -12,11 +11,9 @@ import Pagination from "../components/Pagination";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
-
 // Helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
 const isPdfUrl = (url) => /\.pdf$/i.test(url || "");
-
 
 // Sorting options
 const certSortOptions = [
@@ -27,7 +24,6 @@ const certSortOptions = [
   { value: "-title", label: "Title (Z→A)" },
 ];
 
-
 // Build absolute URL if DRF returns a relative path
 const makeFileUrl = (maybeUrl) => {
   if (!maybeUrl || typeof maybeUrl !== "string") return null;
@@ -36,21 +32,15 @@ const makeFileUrl = (maybeUrl) => {
   return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
 };
 
-
 export default function CertificatesPage() {
   // URL params
   const [sp, setSp] = useSearchParams();
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
   const page = sp.get("page") || 1;
-
-  // NEW: support filtering by a specific id
-  const idParam = sp.get("id") || "";
-
   const filters = {
     issuer: sp.get("issuer") || "",
     date_earned: sp.get("date_earned") || "",
-    id: idParam, // NEW
   };
 
   // Store state + actions
@@ -81,15 +71,7 @@ export default function CertificatesPage() {
   // Fetch certificates whenever query params change
   useEffect(() => {
     fetchCertificates({ search, ordering, filters, page });
-  }, [
-    fetchCertificates,
-    search,
-    ordering,
-    page,
-    filters.issuer,
-    filters.date_earned,
-    filters.id, // NEW
-  ]);
+  }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned]);
 
   // Scroll when opening the form
   useEffect(() => {
@@ -109,9 +91,10 @@ export default function CertificatesPage() {
     setSp(next);
   };
 
-  // ---- NEW: per-certificate projects count (cached) ----
+  // ---- per-certificate projects count (cached) ----
+  // (Kept as-is, but we now prefer server 'project_count' if present.)
   const [countsByCertId, setCountsByCertId] = useState({}); // { [certId]: number }
-  const [countErrors, setCountErrors] = useState({}); // optional, to avoid spamming
+  const [countErrors, setCountErrors] = useState({}); // avoid spamming
 
   // Visible cert IDs (current page slice only)
   const visibleCertIds = useMemo(() => certificates.map((c) => c.id), [certificates]);
@@ -128,7 +111,6 @@ export default function CertificatesPage() {
         } else if (typeof data === "object" && data && typeof data.count === "number") {
           count = data.count;
         } else if (Array.isArray(data?.results)) {
-          // some paginations nest results
           count = data.results.length;
         }
         if (!cancelled) {
@@ -137,7 +119,6 @@ export default function CertificatesPage() {
       } catch (err) {
         if (!cancelled) {
           setCountErrors((prev) => ({ ...prev, [certId]: true }));
-          // Don't throw—silent fail; just show "–"
         }
       }
     };
@@ -171,29 +152,7 @@ export default function CertificatesPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-2">Certificates</h1>
-
-      {/* NEW: Optional “chip” to clear the id filter */}
-      {idParam && (
-        <div className="mb-3 text-sm">
-          <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-gray-600">
-            <span className="opacity-90">
-              Filtered by certificate id: <strong>#{idParam}</strong>
-            </span>
-            <button
-              className="underline hover:opacity-80"
-              onClick={() => {
-                const next = new URLSearchParams(sp);
-                next.delete("id");
-                next.delete("page");
-                setSp(next);
-              }}
-            >
-              Clear filter
-            </button>
-          </span>
-        </div>
-      )}
+      <h1 className="font-heading text-2xl mb-4">Certificates</h1>
 
       {/* Controls: Search / Filters / Sort */}
       <div className="grid gap-3 mb-6 max-w-xl">
@@ -209,7 +168,6 @@ export default function CertificatesPage() {
             writeParams({
               issuer: f.issuer || "",
               date_earned: f.date_earned || "",
-              // note: we do not write id here; chip handles clearing it explicitly
             })
           }
         />
@@ -234,7 +192,9 @@ export default function CertificatesPage() {
           const showImg = url && isImageUrl(url);
           const showPdf = url && isPdfUrl(url);
           const isEditing = editingId === c.id;
-          const projCount = countsByCertId[c.id];
+
+          // NEW: prefer server-annotated count if present, else fall back to cached API counts
+          const projCount = (typeof c.project_count === "number") ? c.project_count : countsByCertId[c.id];
 
           return (
             <div key={c.id} className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col">
@@ -296,7 +256,7 @@ export default function CertificatesPage() {
                     </>
                   )}
 
-                  {/* Footer: projects count + link */}
+                  {/* Footer: projects count + (conditionally) link */}
                   <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between">
                     <div className="text-sm opacity-80">
                       Projects:{" "}
@@ -304,12 +264,16 @@ export default function CertificatesPage() {
                         {projCount == null ? "…" : projCount}
                       </span>
                     </div>
-                    <Link
-                      to={`/projects?certificate=${c.id}`}
-                      className="text-xs underline opacity-90 hover:opacity-100"
-                    >
-                      View projects
-                    </Link>
+
+                    {/* NEW: show link only when there's at least 1 linked project */}
+                    {typeof projCount === "number" && projCount > 0 && (
+                      <Link
+                        to={`/projects?certificate=${c.id}`}
+                        className="text-xs underline opacity-90 hover:opacity-100"
+                      >
+                        View projects
+                      </Link>
+                    )}
                   </div>
                 </>
               )}
