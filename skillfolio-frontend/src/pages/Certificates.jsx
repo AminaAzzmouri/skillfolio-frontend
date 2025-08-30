@@ -1,4 +1,5 @@
 /* Docs: see docs/pages/Certificates.jsx.md */
+// NEW: accepts `?id=<pk>` to filter list to a single certificate (used by Projects “View certificate” link).
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
@@ -11,9 +12,11 @@ import Pagination from "../components/Pagination";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
+
 // Helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
 const isPdfUrl = (url) => /\.pdf$/i.test(url || "");
+
 
 // Sorting options
 const certSortOptions = [
@@ -24,6 +27,7 @@ const certSortOptions = [
   { value: "-title", label: "Title (Z→A)" },
 ];
 
+
 // Build absolute URL if DRF returns a relative path
 const makeFileUrl = (maybeUrl) => {
   if (!maybeUrl || typeof maybeUrl !== "string") return null;
@@ -32,15 +36,21 @@ const makeFileUrl = (maybeUrl) => {
   return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
 };
 
+
 export default function CertificatesPage() {
   // URL params
   const [sp, setSp] = useSearchParams();
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
   const page = sp.get("page") || 1;
+
+  // NEW: support filtering by a specific id
+  const idParam = sp.get("id") || "";
+
   const filters = {
     issuer: sp.get("issuer") || "",
     date_earned: sp.get("date_earned") || "",
+    id: idParam, // NEW
   };
 
   // Store state + actions
@@ -71,7 +81,15 @@ export default function CertificatesPage() {
   // Fetch certificates whenever query params change
   useEffect(() => {
     fetchCertificates({ search, ordering, filters, page });
-  }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned]);
+  }, [
+    fetchCertificates,
+    search,
+    ordering,
+    page,
+    filters.issuer,
+    filters.date_earned,
+    filters.id, // NEW
+  ]);
 
   // Scroll when opening the form
   useEffect(() => {
@@ -153,7 +171,29 @@ export default function CertificatesPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-4">Certificates</h1>
+      <h1 className="font-heading text-2xl mb-2">Certificates</h1>
+
+      {/* NEW: Optional “chip” to clear the id filter */}
+      {idParam && (
+        <div className="mb-3 text-sm">
+          <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-gray-600">
+            <span className="opacity-90">
+              Filtered by certificate id: <strong>#{idParam}</strong>
+            </span>
+            <button
+              className="underline hover:opacity-80"
+              onClick={() => {
+                const next = new URLSearchParams(sp);
+                next.delete("id");
+                next.delete("page");
+                setSp(next);
+              }}
+            >
+              Clear filter
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Controls: Search / Filters / Sort */}
       <div className="grid gap-3 mb-6 max-w-xl">
@@ -169,6 +209,7 @@ export default function CertificatesPage() {
             writeParams({
               issuer: f.issuer || "",
               date_earned: f.date_earned || "",
+              // note: we do not write id here; chip handles clearing it explicitly
             })
           }
         />

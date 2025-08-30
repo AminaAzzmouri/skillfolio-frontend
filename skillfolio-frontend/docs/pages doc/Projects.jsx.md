@@ -76,3 +76,14 @@ Feeds dashboard stats; mirrors Certificates CRUD pattern for consistency.
 - Project detail page with richer rendering
 - Markdown description support, attachments/screenshots
 - Pagination and infinite scroll
+
+===============================================================================
+
+# What's new:
+
+   - Cards rendered in a responsive GRID (1 / 2 / 3 cols).
+   - Each card shows a bottom bar:
+       • If linked: "Linked to: <Certificate Title>" + "View certificate" link
+         that navigates to /certificates?id=<certificateId>.
+       • If not linked: "Not linked" (no link).
+   - Keeps existing filters/search/sort/pagination/editing.

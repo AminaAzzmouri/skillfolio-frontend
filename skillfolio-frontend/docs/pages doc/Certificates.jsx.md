@@ -88,3 +88,7 @@ Feeds the Dashboard’s stats and “recent certificates” list.
 - Filters (issuer, year)  
 - Drag-and-drop file upload, progress bar  
 - Optimistic updates with reconciliation
+
+
+New:
+accepts ?id=<pk> to filter list to a single certificate (used by Projects “View certificate” link).

@@ -1,7 +1,5 @@
-/* Docs: see docs/pages/Projects.jsx.md */
-
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import SearchBar from "../components/SearchBar";
 import Filters from "../components/Filters";
@@ -26,13 +24,17 @@ const projSortOptions = [
 ];
 
 export default function ProjectsPage() {
-  // URL params
+  // URL params (search / filters / ordering / pagination)
   const [sp, setSp] = useSearchParams();
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
   const page = sp.get("page") || 1;
+
+  // Accept BOTH ?certificate= and ?certificateId=
+  const effectiveCertificate = sp.get("certificate") || sp.get("certificateId") || "";
+
   const filters = {
-    certificate: sp.get("certificate") || "",
+    certificate: effectiveCertificate,
     status: sp.get("status") || "",
   };
 
@@ -72,7 +74,7 @@ export default function ProjectsPage() {
   const [submitError, setSubmitError] = useState("");
   const formRef = useRef(null);
 
-  // Load dropdown data
+  // Load dropdown data (for id->title mapping)
   useEffect(() => {
     fetchCertificates();
   }, [fetchCertificates]);
@@ -107,72 +109,69 @@ export default function ProjectsPage() {
     setSp(next);
   };
 
-  // Create
+  // Clear cert filter (remove BOTH keys)
+  const clearCertFilter = () => {
+    const next = new URLSearchParams(sp);
+    next.delete("certificate");
+    next.delete("certificateId");
+    next.delete("page");
+    setSp(next);
+  };
+
+  // Create / Update / Delete
   const handleCreate = async (payload) => {
     setSubmitError("");
     setSubmitting(true);
-    try {
-      await createProject(payload);
-    } catch (err) {
+    try { await createProject(payload); }
+    catch (err) {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ?? "Failed to create project";
       setSubmitError(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
-  // Update
   const handleUpdate = async (id, patch) => {
     setSubmitError("");
     setSubmitting(true);
-    try {
-      await updateProject(id, patch);
-      setEditingId(null);
-    } catch (err) {
+    try { await updateProject(id, patch); setEditingId(null); }
+    catch (err) {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ?? "Failed to update project";
       setSubmitError(msg);
-    } finally {
-      setSubmitting(false);
-    }
+    } finally { setSubmitting(false); }
   };
 
-  // Delete
   const handleConfirmDelete = async () => {
     if (!confirmDeleteId) return;
     await deleteProject(confirmDeleteId);
     setConfirmDeleteId(null);
   };
 
-  // Active certificate chip (if filter applied)
-  const activeCertTitle = filters.certificate ? certTitleById.get(Number(filters.certificate)) : null;
+  const activeCertTitle = effectiveCertificate ? certTitleById.get(Number(effectiveCertificate)) : null;
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
       <h1 className="font-heading text-2xl mb-2">Projects</h1>
 
-      {/* Active filter chip */}
-      {filters.certificate && (
+      {/* Active certificate filter chip (if any) */}
+      {effectiveCertificate && (
         <div className="mb-3 text-sm">
-          <span className="inline-flex items-center gap-2 rounded-full border border-gray-700 px-3 py-1 bg-background/70">
-            <span className="opacity-80">Filtered by certificate:</span>
-            <span className="font-medium truncate max-w-[14rem]">{activeCertTitle || `#${filters.certificate}`}</span>
-            <button
-              className="text-xs underline opacity-90 hover:opacity-100"
-              onClick={() => writeParams({ certificate: "" })}
-            >
-              Clear
+          <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-gray-600">
+            <span className="opacity-90">
+              Filtered by certificate: <strong>{activeCertTitle ?? `#${effectiveCertificate}`}</strong>
+            </span>
+            <button className="underline hover:opacity-80" onClick={clearCertFilter}>
+              Clear filter
             </button>
           </span>
         </div>
       )}
 
-      {/* Controls: Search / Filters / Sort */}
+      {/* Controls */}
       <div className="grid gap-3 mb-4 max-w-xl">
         <SearchBar
           value={search}
@@ -198,7 +197,8 @@ export default function ProjectsPage() {
         />
       </div>
 
-      <div className="max-w-xl mb-6">
+      {/* GRID */}
+      <div className="mb-6">
         {projectsLoading ? (
           <div className="opacity-80 text-sm">Loading projects…</div>
         ) : projectsError ? (
@@ -206,56 +206,62 @@ export default function ProjectsPage() {
         ) : projects.length === 0 ? (
           <div className="opacity-80 text-sm">No projects yet.</div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((p) => {
               const isEditing = editingId === p.id;
               const linkedTitle = p.certificate != null ? certTitleById.get(p.certificate) : null;
 
               return (
-                <li key={p.id} className="p-3 rounded border border-gray-700 bg-background/70">
+                <li key={p.id} className="rounded border border-gray-700 bg-background/70 overflow-hidden">
                   {!isEditing ? (
                     <>
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="font-semibold">{p.title}</div>
-                          <div className="text-sm text-gray-300">{p.description}</div>
-                          <div className="text-xs mt-1 opacity-80">Status: {p.status || "planned"}</div>
-                          <div className="text-xs mt-1">
-                            {linkedTitle ? (
-                              <>
-                                Linked to:{" "}
-                                <Link
-                                  to={`/projects?certificate=${p.certificate}`}
-                                  className="underline opacity-90 hover:opacity-100"
-                                >
-                                  {linkedTitle}
-                                </Link>
-                              </>
-                            ) : (
-                              "Not linked"
-                            )}
-                            {" • "}Created: {formatDateLong(p.date_created)}
+                      <div className="p-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <div className="font-semibold">{p.title}</div>
+                            <div className="text-sm text-gray-300">{p.description}</div>
+                            <div className="text-xs mt-1 opacity-80">Status: {p.status || "planned"}</div>
+                            <div className="text-xs mt-1">
+                              Created: {formatDateLong(p.date_created)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setEditingId(p.id)}
+                              className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(p.id)}
+                              className="px-3 py-1 rounded bg-accent text-black font-semibold hover:bg-accent/80"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
+                      </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setEditingId(p.id)}
-                            className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => setConfirmDeleteId(p.id)}
-                            className="px-3 py-1 rounded bg-accent text-black font-semibold hover:bg-accent/80"
-                          >
-                            Delete
-                          </button>
+                      {/* Bottom bar: linked cert + optional link */}
+                      <div className="flex items-center justify-between gap-2 px-3 py-2 border-t border-gray-700">
+                        <div className="text-sm opacity-90">
+                          {p.certificate != null
+                            ? `Linked to: ${linkedTitle ?? `#${p.certificate}`}`
+                            : "Not linked"}
                         </div>
+                        {p.certificate != null && (
+                          <Link
+                            to={`/certificates?id=${p.certificate}`}
+                            className="text-sm underline hover:opacity-80"
+                          >
+                            View certificate
+                          </Link>
+                        )}
                       </div>
                     </>
                   ) : (
-                    <div className="mt-2">
+                    <div className="p-3">
                       <ProjectForm
                         initial={p}
                         certificates={certificates}
