@@ -1,7 +1,7 @@
 /* Docs: see docs/pages/Projects.jsx.md */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import SearchBar from "../components/SearchBar";
 import Filters from "../components/Filters";
@@ -26,7 +26,7 @@ const projSortOptions = [
 ];
 
 export default function ProjectsPage() {
-  // URL params (search / filters / ordering / pagination)
+  // URL params
   const [sp, setSp] = useSearchParams();
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
@@ -41,7 +41,7 @@ export default function ProjectsPage() {
     projects,
     projectsLoading,
     projectsError,
-    projectsMeta, // NEW
+    projectsMeta,
     fetchProjects,
     createProject,
     updateProject,
@@ -54,7 +54,7 @@ export default function ProjectsPage() {
     projects: s.projects,
     projectsLoading: s.projectsLoading,
     projectsError: s.projectsError,
-    projectsMeta: s.projectsMeta, // NEW
+    projectsMeta: s.projectsMeta,
     fetchProjects: s.fetchProjects,
     createProject: s.createProject,
     updateProject: s.updateProject,
@@ -113,7 +113,6 @@ export default function ProjectsPage() {
     setSubmitting(true);
     try {
       await createProject(payload);
-      // Optionally: setShowCreate(false);
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -150,9 +149,28 @@ export default function ProjectsPage() {
     setConfirmDeleteId(null);
   };
 
+  // Active certificate chip (if filter applied)
+  const activeCertTitle = filters.certificate ? certTitleById.get(Number(filters.certificate)) : null;
+
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-4">Projects</h1>
+      <h1 className="font-heading text-2xl mb-2">Projects</h1>
+
+      {/* Active filter chip */}
+      {filters.certificate && (
+        <div className="mb-3 text-sm">
+          <span className="inline-flex items-center gap-2 rounded-full border border-gray-700 px-3 py-1 bg-background/70">
+            <span className="opacity-80">Filtered by certificate:</span>
+            <span className="font-medium truncate max-w-[14rem]">{activeCertTitle || `#${filters.certificate}`}</span>
+            <button
+              className="text-xs underline opacity-90 hover:opacity-100"
+              onClick={() => writeParams({ certificate: "" })}
+            >
+              Clear
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Controls: Search / Filters / Sort */}
       <div className="grid gap-3 mb-4 max-w-xl">
@@ -203,9 +221,20 @@ export default function ProjectsPage() {
                           <div className="text-sm text-gray-300">{p.description}</div>
                           <div className="text-xs mt-1 opacity-80">Status: {p.status || "planned"}</div>
                           <div className="text-xs mt-1">
-                            {linkedTitle ? `Linked to: ${linkedTitle}` : "Not linked"}
-                            {" • "}
-                            Created: {formatDateLong(p.date_created)}
+                            {linkedTitle ? (
+                              <>
+                                Linked to:{" "}
+                                <Link
+                                  to={`/projects?certificate=${p.certificate}`}
+                                  className="underline opacity-90 hover:opacity-100"
+                                >
+                                  {linkedTitle}
+                                </Link>
+                              </>
+                            ) : (
+                              "Not linked"
+                            )}
+                            {" • "}Created: {formatDateLong(p.date_created)}
                           </div>
                         </div>
 

@@ -1,7 +1,7 @@
 /* Docs: see docs/pages/Certificates.jsx.md */
 
-import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { api } from "../lib/api";
 import SearchBar from "../components/SearchBar";
@@ -11,10 +11,11 @@ import Pagination from "../components/Pagination";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
 
-// Best-effort helpers to detect previewable file types by extension
+// Helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
 const isPdfUrl = (url) => /\.pdf$/i.test(url || "");
 
+// Sorting options
 const certSortOptions = [
   { value: "", label: "Sort…" },
   { value: "date_earned", label: "Date (oldest)" },
@@ -23,8 +24,16 @@ const certSortOptions = [
   { value: "-title", label: "Title (Z→A)" },
 ];
 
+// Build absolute URL if DRF returns a relative path
+const makeFileUrl = (maybeUrl) => {
+  if (!maybeUrl || typeof maybeUrl !== "string") return null;
+  if (maybeUrl.startsWith("http")) return maybeUrl;
+  const base = api?.defaults?.baseURL || "";
+  return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
+};
+
 export default function CertificatesPage() {
-  // URL params (search / filters / ordering / pagination)
+  // URL params
   const [sp, setSp] = useSearchParams();
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
@@ -34,12 +43,12 @@ export default function CertificatesPage() {
     date_earned: sp.get("date_earned") || "",
   };
 
-  // store state + actions
+  // Store state + actions
   const {
     certificates,
     certificatesLoading,
     certificatesError,
-    certificatesMeta, // NEW
+    certificatesMeta,
     fetchCertificates,
     updateCertificate,
     deleteCertificate,
@@ -47,7 +56,7 @@ export default function CertificatesPage() {
     certificates: s.certificates,
     certificatesLoading: s.certificatesLoading,
     certificatesError: s.certificatesError,
-    certificatesMeta: s.certificatesMeta, // NEW
+    certificatesMeta: s.certificatesMeta,
     fetchCertificates: s.fetchCertificates,
     updateCertificate: s.updateCertificate,
     deleteCertificate: s.deleteCertificate,
@@ -59,15 +68,7 @@ export default function CertificatesPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const formRef = useRef(null);
 
-  // Build absolute URL if DRF returns a relative path (e.g., /media/...)
-  const makeFileUrl = (maybeUrl) => {
-    if (!maybeUrl || typeof maybeUrl !== "string") return null;
-    if (maybeUrl.startsWith("http")) return maybeUrl;
-    const base = api?.defaults?.baseURL || "";
-    return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
-  };
-
-  // Fetch whenever query params change
+  // Fetch certificates whenever query params change
   useEffect(() => {
     fetchCertificates({ search, ordering, filters, page });
   }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned]);
@@ -90,8 +91,51 @@ export default function CertificatesPage() {
     setSp(next);
   };
 
+  // ---- NEW: per-certificate projects count (cached) ----
+  const [countsByCertId, setCountsByCertId] = useState({}); // { [certId]: number }
+  const [countErrors, setCountErrors] = useState({}); // optional, to avoid spamming
+
+  // Visible cert IDs (current page slice only)
+  const visibleCertIds = useMemo(() => certificates.map((c) => c.id), [certificates]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchCount = async (certId) => {
+      try {
+        const { data } = await api.get(`/api/projects/?certificate=${certId}`);
+        let count = 0;
+        if (Array.isArray(data)) {
+          count = data.length;
+        } else if (typeof data === "object" && data && typeof data.count === "number") {
+          count = data.count;
+        } else if (Array.isArray(data?.results)) {
+          // some paginations nest results
+          count = data.results.length;
+        }
+        if (!cancelled) {
+          setCountsByCertId((prev) => ({ ...prev, [certId]: count }));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setCountErrors((prev) => ({ ...prev, [certId]: true }));
+          // Don't throw—silent fail; just show "–"
+        }
+      }
+    };
+
+    for (const id of visibleCertIds) {
+      if (countsByCertId[id] == null && !countErrors[id]) {
+        fetchCount(id);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visibleCertIds, countsByCertId, countErrors]);
+
   const handleEditSubmit = async (id, form) => {
-    // form has: { title, issuer, date_earned, file? }
     await updateCertificate(id, {
       title: form.title,
       issuer: form.issuer,
@@ -112,7 +156,7 @@ export default function CertificatesPage() {
       <h1 className="font-heading text-2xl mb-4">Certificates</h1>
 
       {/* Controls: Search / Filters / Sort */}
-      <div className="grid gap-3 mb-4 max-w-xl">
+      <div className="grid gap-3 mb-6 max-w-xl">
         <SearchBar
           value={search}
           onChange={(v) => writeParams({ search: v })}
@@ -135,35 +179,35 @@ export default function CertificatesPage() {
         />
       </div>
 
-      {/* List states FIRST */}
+      {/* States */}
       {certificatesLoading && <div className="opacity-80 mb-4">Loading certificates…</div>}
-
       {certificatesError && <div className="text-accent mb-4">Error: {certificatesError}</div>}
-
       {!certificatesLoading && !certificatesError && certificates.length === 0 && (
-        <div className="opacity-80 mb-2">No certificates yet.</div>
+        <div className="opacity-80 mb-4">No certificates yet.</div>
       )}
 
-      <ul className="space-y-2 max-w-xl mb-6">
+      {/* Grid cards */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-8">
         {certificates.map((c) => {
           const url = makeFileUrl(c.file_upload);
           const showImg = url && isImageUrl(url);
           const showPdf = url && isPdfUrl(url);
           const isEditing = editingId === c.id;
+          const projCount = countsByCertId[c.id];
 
           return (
-            <li key={c.id} className="p-3 rounded border border-gray-700 bg-background/70">
+            <div key={c.id} className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col">
               {/* VIEW MODE */}
               {!isEditing && (
                 <>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="font-semibold">{c.title}</div>
-                      <div className="text-sm text-gray-300">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold truncate" title={c.title}>{c.title}</div>
+                      <div className="text-sm text-gray-300 truncate">
                         {c.issuer} • {c.date_earned}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => setEditingId(c.id)}
                         className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
@@ -179,14 +223,14 @@ export default function CertificatesPage() {
                     </div>
                   </div>
 
-                  {/* Inline preview (image or PDF) */}
+                  {/* Preview */}
                   {url && (
                     <>
                       {showImg ? (
                         <img
                           src={url}
                           alt={`${c.title} file`}
-                          className="mt-2 max-h-48 w-auto rounded border border-gray-700"
+                          className="mt-2 max-h-40 w-full object-cover rounded border border-gray-700"
                           loading="lazy"
                         />
                       ) : showPdf ? (
@@ -195,7 +239,7 @@ export default function CertificatesPage() {
                             data={`${url}#page=1&zoom=100`}
                             type="application/pdf"
                             width="100%"
-                            height="300"
+                            height="220"
                             className="rounded border border-gray-700"
                           >
                             <a className="text-xs underline" href={url} target="_blank" rel="noreferrer">
@@ -205,12 +249,27 @@ export default function CertificatesPage() {
                         </div>
                       ) : null}
 
-                      {/* Always offer a link */}
                       <a className="text-xs mt-2 inline-block underline" href={url} target="_blank" rel="noreferrer">
                         View file
                       </a>
                     </>
                   )}
+
+                  {/* Footer: projects count + link */}
+                  <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between">
+                    <div className="text-sm opacity-80">
+                      Projects:{" "}
+                      <span className="opacity-100 font-medium">
+                        {projCount == null ? "…" : projCount}
+                      </span>
+                    </div>
+                    <Link
+                      to={`/projects?certificate=${c.id}`}
+                      className="text-xs underline opacity-90 hover:opacity-100"
+                    >
+                      View projects
+                    </Link>
+                  </div>
                 </>
               )}
 
@@ -232,10 +291,10 @@ export default function CertificatesPage() {
                   </div>
                 </div>
               )}
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
 
       {/* Toggle button */}
       <div className="max-w-xl">
