@@ -1,8 +1,8 @@
-// src/components/Navbar.jsx
 import { useEffect, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { motion, AnimatePresence } from "framer-motion";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Navbar() {
   const user = useAppStore((s) => s.user);
@@ -26,33 +26,30 @@ export default function Navbar() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onKeyDown]);
 
-  const navLinks = [
-    { to: "/dashboard", label: "Dashboard" }
-  ];
+  const navLinks = [{ to: "/dashboard", label: "Dashboard" }];
 
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b border-gray-700">
+    <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-border shadow-sm">
       <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
         <Link to="/" className="font-heading text-lg">
           Skillfolio
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-3">
           {navLinks.map((n) => (
-            <Link
-              key={n.to}
-              to={n.to}
-              className="opacity-90 hover:opacity-100"
-            >
+            <Link key={n.to} to={n.to} className="px-3 py-1 rounded hover:bg-background/40">
               {n.label}
             </Link>
           ))}
+
+          <ThemeToggle />
+
           {user ? (
             <>
-              <span className="text-sm opacity-70">{user.email}</span>
+              <span className="text-sm opacity-70 ml-2">{user.email}</span>
               <button
-                className="rounded bg-gray-800 px-3 py-1 hover:bg-gray-700"
+                className="btn btn-outline ml-1"
                 onClick={logout}
               >
                 Logout
@@ -60,10 +57,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link className="rounded bg-primary px-3 py-1 hover:bg-primary/80" to="/login">
+              <Link className="btn btn-primary ml-2" to="/login">
                 Login
               </Link>
-              <Link className="rounded border border-gray-700 px-3 py-1 hover:bg-background/60" to="/register">
+              <Link className="btn btn-outline" to="/register">
                 Register
               </Link>
             </>
@@ -72,7 +69,7 @@ export default function Navbar() {
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden inline-flex items-center justify-center rounded border border-gray-700 px-3 py-2"
+          className="md:hidden inline-flex items-center justify-center rounded border border-border px-3 py-2"
           aria-label="Open menu"
           aria-expanded={open}
           onClick={() => setOpen(true)}
@@ -95,7 +92,7 @@ export default function Navbar() {
             />
             {/* panel */}
             <motion.aside
-              className="fixed left-0 top-0 bottom-0 w-72 bg-background border-r border-gray-700 p-4"
+              className="fixed left-0 top-0 bottom-0 w-72 bg-surface border-r border-border p-4"
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
@@ -106,7 +103,7 @@ export default function Navbar() {
               <div className="flex items-center justify-between mb-4">
                 <span className="font-heading text-lg">Menu</span>
                 <button
-                  className="rounded border border-gray-700 px-2 py-1"
+                  className="rounded border border-border px-2 py-1"
                   onClick={() => setOpen(false)}
                   aria-label="Close menu"
                 >
@@ -114,24 +111,26 @@ export default function Navbar() {
                 </button>
               </div>
 
-              <nav className="flex flex-col gap-3">
+              <nav className="flex flex-col gap-2">
                 {navLinks.map((n) => (
                   <Link
                     key={n.to}
                     to={n.to}
-                    className="rounded px-3 py-2 hover:bg-background/60"
+                    className="rounded px-3 py-2 hover:bg-background/40"
                   >
                     {n.label}
                   </Link>
                 ))}
               </nav>
 
-              <div className="mt-6 border-t border-gray-800 pt-4 flex flex-col gap-2">
+              <div className="mt-6 border-t border-border pt-4 flex flex-col gap-2">
+                <ThemeToggle />
+
                 {user ? (
                   <>
                     <div className="text-sm opacity-70 truncate">{user.email}</div>
                     <button
-                      className="rounded bg-gray-800 px-3 py-2 hover:bg-gray-700 text-left"
+                      className="btn btn-outline text-left"
                       onClick={logout}
                     >
                       Logout
@@ -139,16 +138,10 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    <Link
-                      className="rounded bg-primary px-3 py-2 hover:bg-primary/80"
-                      to="/login"
-                    >
+                    <Link className="btn btn-primary" to="/login">
                       Login
                     </Link>
-                    <Link
-                      className="rounded border border-gray-700 px-3 py-2 hover:bg-background/60"
-                      to="/register"
-                    >
+                    <Link className="btn btn-outline" to="/register">
                       Register
                     </Link>
                   </>
@@ -161,3 +154,5 @@ export default function Navbar() {
     </header>
   );
 }
+
+

@@ -2,24 +2,27 @@
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        primary: "#0EA5E9",   // Sky Blue
-        secondary: "#22C55E", // Green
-        background: "#0F172A", // Deep Navy
-        text: "#F1F5F9",       // Light Gray
-        accent: "#EAB308",     // Yellow
+        // Token colors backed by CSS variables for runtime theming
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface: "rgb(var(--color-surface) / <alpha-value>)",
+        text: "rgb(var(--color-text) / <alpha-value>)",
+        muted: "rgb(var(--color-muted) / <alpha-value>)",
+        border: "rgb(var(--color-border) / <alpha-value>)",
+
+        primary: "rgb(var(--color-primary) / <alpha-value>)",
+        secondary: "rgb(var(--color-secondary) / <alpha-value>)",
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
       },
       fontFamily: {
         heading: ['"Roboto Mono"', "monospace"],
-        body: ['Roboto', "sans-serif"],
+        body: ["Roboto", "sans-serif"],
       },
     },
   },
   plugins: [],
-}
+};
