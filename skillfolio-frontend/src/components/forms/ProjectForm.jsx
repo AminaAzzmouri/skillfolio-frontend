@@ -1,6 +1,6 @@
 /* Docs: see docs/components/ProjectForm.jsx.md */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
 const GOAL_LABEL = {
   practice_skill: "Practice a new skill",
@@ -59,6 +59,18 @@ export default function ProjectForm({
   onCancel = null,
   submitLabel = "Add Project",
 }) {
+  const titleId = useId();
+  const statusId = useId();
+  const workId = useId();
+  const durationId = useId();
+  const goalId = useId();
+  const challengesId = useId();
+  const skillsId = useId();
+  const outcomeId = useId();
+  const improveId = useId();
+  const certId = useId();
+  const descId = useId();
+
   const [descDirty, setDescDirty] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -109,6 +121,40 @@ export default function ProjectForm({
     onChange({ description: e.target.value });
   };
 
+  const handleReset = () => {
+    if (initial) {
+      setForm({
+        title: initial.title ?? "",
+        status: initial.status ?? "planned",
+        work_type: initial.work_type ?? "",
+        duration_text: initial.duration_text ?? "",
+        primary_goal: initial.primary_goal ?? "",
+        challenges_short: initial.challenges_short ?? "",
+        skills_used: initial.skills_used ?? "",
+        outcome_short: initial.outcome_short ?? "",
+        skills_to_improve: initial.skills_to_improve ?? "",
+        description: initial.description ?? "",
+        certificateId: initial.certificate ?? "",
+      });
+      setDescDirty(true);
+    } else {
+      setForm({
+        title: "",
+        status: "planned",
+        work_type: "",
+        duration_text: "",
+        primary_goal: "",
+        challenges_short: "",
+        skills_used: "",
+        outcome_short: "",
+        skills_to_improve: "",
+        description: "",
+        certificateId: "",
+      });
+      setDescDirty(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const payload = {
@@ -130,128 +176,153 @@ export default function ProjectForm({
     } else if (onCreate) {
       await onCreate(payload);
       // reset after create
-      setForm({
-        title: "",
-        status: "planned",
-        work_type: "",
-        duration_text: "",
-        primary_goal: "",
-        challenges_short: "",
-        skills_used: "",
-        outcome_short: "",
-        skills_to_improve: "",
-        description: "",
-        certificateId: "",
-      });
-      setDescDirty(false);
+      handleReset();
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-background/80 border border-gray-700 p-4 rounded grid gap-4"
-    >
-      <input
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder="Project Title"
-        value={form.title}
-        onChange={(e) => onChange({ title: e.target.value })}
-        required
-      />
+    <form onSubmit={handleSubmit} className="grid gap-4">
+      <div className="grid gap-1">
+        <label htmlFor={titleId} className="text-sm opacity-80">Project title</label>
+        <input
+          id={titleId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="e.g., Portfolio website"
+          value={form.title}
+          onChange={(e) => onChange({ title: e.target.value })}
+          required
+        />
+      </div>
 
-      <select
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        value={form.status}
-        onChange={(e) => onChange({ status: e.target.value })}
-      >
-        <option value="planned">Planned</option>
-        <option value="in_progress">In Progress</option>
-        <option value="completed">Completed</option>
-      </select>
+      <div className="grid gap-1">
+        <label htmlFor={statusId} className="text-sm opacity-80">Status</label>
+        <select
+          id={statusId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.status}
+          onChange={(e) => onChange({ status: e.target.value })}
+        >
+          <option value="planned">Planned</option>
+          <option value="in_progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
 
-      <select
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        value={form.work_type}
-        onChange={(e) => onChange({ work_type: e.target.value })}
-      >
-        <option value="">Work Type (optional)</option>
-        <option value="individual">Individual</option>
-        <option value="team">Team</option>
-      </select>
+      <div className="grid gap-1">
+        <label htmlFor={workId} className="text-sm opacity-80">Work type (optional)</label>
+        <select
+          id={workId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.work_type}
+          onChange={(e) => onChange({ work_type: e.target.value })}
+        >
+          <option value="">—</option>
+          <option value="individual">Individual</option>
+          <option value="team">Team</option>
+        </select>
+      </div>
 
-      <input
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder='Duration (e.g., "3 weeks")'
-        value={form.duration_text}
-        onChange={(e) => onChange({ duration_text: e.target.value })}
-      />
+      <div className="grid gap-1">
+        <label htmlFor={durationId} className="text-sm opacity-80">Duration (optional)</label>
+        <input
+          id={durationId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder='e.g., "3 weeks"'
+          value={form.duration_text}
+          onChange={(e) => onChange({ duration_text: e.target.value })}
+        />
+      </div>
 
-      <select
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        value={form.primary_goal}
-        onChange={(e) => onChange({ primary_goal: e.target.value })}
-      >
-        <option value="">Primary Goal (optional)</option>
-        <option value="practice_skill">{GOAL_LABEL.practice_skill}</option>
-        <option value="deliver_feature">{GOAL_LABEL.deliver_feature}</option>
-        <option value="build_demo">{GOAL_LABEL.build_demo}</option>
-        <option value="solve_problem">{GOAL_LABEL.solve_problem}</option>
-      </select>
+      <div className="grid gap-1">
+        <label htmlFor={goalId} className="text-sm opacity-80">Primary goal (optional)</label>
+        <select
+          id={goalId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.primary_goal}
+          onChange={(e) => onChange({ primary_goal: e.target.value })}
+        >
+          <option value="">—</option>
+          <option value="practice_skill">{GOAL_LABEL.practice_skill}</option>
+          <option value="deliver_feature">{GOAL_LABEL.deliver_feature}</option>
+          <option value="build_demo">{GOAL_LABEL.build_demo}</option>
+          <option value="solve_problem">{GOAL_LABEL.solve_problem}</option>
+        </select>
+      </div>
 
-      <textarea
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        rows="2"
-        placeholder="Challenges faced (short)"
-        value={form.challenges_short}
-        onChange={(e) => onChange({ challenges_short: e.target.value })}
-      />
+      <div className="grid gap-1">
+        <label htmlFor={challengesId} className="text-sm opacity-80">Challenges (short)</label>
+        <textarea
+          id={challengesId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          rows="2"
+          placeholder="What was tricky?"
+          value={form.challenges_short}
+          onChange={(e) => onChange({ challenges_short: e.target.value })}
+        />
+      </div>
 
-      <input
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder="Skills/Tools (comma-separated)"
-        value={form.skills_used}
-        onChange={(e) => onChange({ skills_used: e.target.value })}
-      />
+      <div className="grid gap-1">
+        <label htmlFor={skillsId} className="text-sm opacity-80">Skills/Tools</label>
+        <input
+          id={skillsId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="Comma-separated"
+          value={form.skills_used}
+          onChange={(e) => onChange({ skills_used: e.target.value })}
+        />
+      </div>
 
-      <textarea
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        rows="2"
-        placeholder="Outcome / impact (short)"
-        value={form.outcome_short}
-        onChange={(e) => onChange({ outcome_short: e.target.value })}
-      />
+      <div className="grid gap-1">
+        <label htmlFor={outcomeId} className="text-sm opacity-80">Outcome / impact</label>
+        <textarea
+          id={outcomeId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          rows="2"
+          placeholder="What happened as a result?"
+          value={form.outcome_short}
+          onChange={(e) => onChange({ outcome_short: e.target.value })}
+        />
+      </div>
 
-      <input
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder="Skills to practice more (comma-separated)"
-        value={form.skills_to_improve}
-        onChange={(e) => onChange({ skills_to_improve: e.target.value })}
-      />
+      <div className="grid gap-1">
+        <label htmlFor={improveId} className="text-sm opacity-80">Skills to improve</label>
+        <input
+          id={improveId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="Comma-separated"
+          value={form.skills_to_improve}
+          onChange={(e) => onChange({ skills_to_improve: e.target.value })}
+        />
+      </div>
 
-      <select
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        value={form.certificateId}
-        onChange={(e) => onChange({ certificateId: e.target.value })}
-      >
-        <option value="">(Optional) Link to a Certificate</option>
-        {certificates.map((c) => (
-          <option value={c.id} key={c.id}>
-            {c.title}
-          </option>
-        ))}
-      </select>
+      <div className="grid gap-1">
+        <label htmlFor={certId} className="text-sm opacity-80">(Optional) Link to a certificate</label>
+        <select
+          id={certId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.certificateId}
+          onChange={(e) => onChange({ certificateId: e.target.value })}
+        >
+          <option value="">—</option>
+          {certificates.map((c) => (
+            <option value={c.id} key={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </select>
+      </div>
 
-      <label className="text-sm opacity-80">
-        Auto-generated description (you can edit):
-      </label>
-      <textarea
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        rows="4"
-        value={form.description}
-        onChange={onDescriptionChange}
-        placeholder="Auto preview will appear here…"
-      />
+      <div className="grid gap-1">
+        <label htmlFor={descId} className="text-sm opacity-80">Description</label>
+        <textarea
+          id={descId}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          rows="4"
+          value={form.description}
+          onChange={onDescriptionChange}
+          placeholder="Auto-generated preview will appear; you can edit."
+        />
+      </div>
 
       {error && <p className="text-sm text-accent">{error}</p>}
 
@@ -262,6 +333,15 @@ export default function ProjectForm({
         >
           {submitting ? "Saving…" : submitLabel}
         </button>
+
+        <button
+          type="button"
+          onClick={handleReset}
+          className="px-3 py-2 rounded border border-gray-600 hover:bg-white/5"
+        >
+          Reset
+        </button>
+
         {onCancel && (
           <button
             type="button"

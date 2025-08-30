@@ -7,6 +7,7 @@ import SortSelect from "../components/SortSelect";
 import Pagination from "../components/Pagination";
 import ProjectForm from "../components/forms/ProjectForm";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Modal from "../components/Modal";
 
 function formatDateLong(iso) {
   if (!iso) return "—";
@@ -91,13 +92,6 @@ export default function ProjectsPage() {
     return m;
   }, [certificates]);
 
-  // Scroll to create form
-  useEffect(() => {
-    if (showCreate && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [showCreate]);
-
   // Helper to write params (and reset page)
   const writeParams = (patch) => {
     const next = new URLSearchParams(sp);
@@ -122,27 +116,35 @@ export default function ProjectsPage() {
   const handleCreate = async (payload) => {
     setSubmitError("");
     setSubmitting(true);
-    try { await createProject(payload); }
-    catch (err) {
+    try {
+      await createProject(payload);
+      setShowCreate(false);
+    } catch (err) {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ?? "Failed to create project";
       setSubmitError(msg);
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleUpdate = async (id, patch) => {
     setSubmitError("");
     setSubmitting(true);
-    try { await updateProject(id, patch); setEditingId(null); }
-    catch (err) {
+    try {
+      await updateProject(id, patch);
+      setEditingId(null);
+    } catch (err) {
       const msg =
         err?.response?.data?.detail ??
         (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
         err?.message ?? "Failed to update project";
       setSubmitError(msg);
-    } finally { setSubmitting(false); }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -155,7 +157,10 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-2">Projects</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="font-heading text-2xl">Projects</h1>
+        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
+      </div>
 
       {/* Active certificate filter chip (if any) */}
       {effectiveCertificate && (
@@ -284,24 +289,26 @@ export default function ProjectsPage() {
 
       <div className="max-w-xl">
         <button
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={() => setShowCreate(true)}
           className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition"
         >
-          {showCreate ? "Hide Add Project" : "Add Project"}
+          Add Project
         </button>
       </div>
 
-      {showCreate && (
-        <div ref={formRef} className="mt-4 max-w-xl">
+      {/* Create in Modal */}
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Project">
+        <div ref={formRef}>
           <ProjectForm
             certificates={certificates}
             submitting={submitting}
             error={submitError}
             onCreate={handleCreate}
             submitLabel="Add Project"
+            onCancel={() => setShowCreate(false)}
           />
         </div>
-      )}
+      </Modal>
 
       {/* Pagination */}
       <div className="max-w-xl mt-4">

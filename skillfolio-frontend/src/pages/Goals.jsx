@@ -1,12 +1,14 @@
 /* Docs: see docs/pages/GoalsPage.md */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { createGoalStep, updateGoalStep, deleteGoalStep } from "../store/goals";
 import { daysUntil } from "../store/utils/date";
 import ProgressBar from "../components/ProgressBar";
 import ConfirmDialog from "../components/ConfirmDialog";
 import GoalForm from "../components/forms/GoalForm";
+import Modal from "../components/Modal";
 
 const COLLAPSE_KEY = "sf_goal_steps_collapsed";
 
@@ -479,7 +481,10 @@ export default function GoalsPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-4">Goals</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="font-heading text-2xl">Goals</h1>
+        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
+      </div>
 
       {goalsError && <div className="text-accent mb-3">Error: {goalsError}</div>}
 
@@ -487,15 +492,16 @@ export default function GoalsPage() {
       <div className="max-w-xl mb-4">
         <button
           type="button"
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={() => setShowCreate(true)}
           className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition"
         >
-          {showCreate ? "Hide Add Goal" : "Add Goal"}
+          Add Goal
         </button>
       </div>
 
-      {showCreate && (
-        <div ref={formRef} className="max-w-xl mb-8">
+      {/* Create in Modal */}
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Goal">
+        <div ref={formRef}>
           <GoalForm
             submitting={submitting}
             error={submitError}
@@ -504,7 +510,7 @@ export default function GoalsPage() {
             onCancel={() => setShowCreate(false)}
           />
         </div>
-      )}
+      </Modal>
 
       {/* Sections */}
       <Section title="In progress" items={inProgress} />

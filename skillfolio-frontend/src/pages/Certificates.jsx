@@ -10,6 +10,7 @@ import SortSelect from "../components/SortSelect";
 import Pagination from "../components/Pagination";
 import CertificateForm from "../components/forms/CertificateForm";
 import ConfirmDialog from "../components/ConfirmDialog";
+import Modal from "../components/Modal";
 
 // Helpers to detect previewable file types
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
@@ -38,12 +39,12 @@ export default function CertificatesPage() {
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
   const page = sp.get("page") || 1;
-  const idParam = sp.get("id") || ""; // NEW: support /certificates?id=<pk>
+  const idParam = sp.get("id") || ""; // support /certificates?id=<pk>
 
   const filters = {
     issuer: sp.get("issuer") || "",
     date_earned: sp.get("date_earned") || "",
-    id: idParam, // NEW: pass pk to API when present
+    id: idParam,
   };
 
   // Store state + actions
@@ -74,18 +75,9 @@ export default function CertificatesPage() {
   // Fetch certificates whenever query params change
   useEffect(() => {
     fetchCertificates({ search, ordering, filters, page });
-    // include filters.id so /certificates?id=... refetches
-  }, [
-    fetchCertificates,
-    search,
-    ordering,
-    page,
-    filters.issuer,
-    filters.date_earned,
-    filters.id,
-  ]);
+  }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned, filters.id]);
 
-  // Scroll when opening the form
+  // Scroll when opening the form (kept; modal also captures attention)
   useEffect(() => {
     if (showForm && formRef.current) {
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -103,16 +95,12 @@ export default function CertificatesPage() {
     setSp(next);
   };
 
-  // ---- per-certificate projects count (cached) ----
-  // (Kept as-is, but we now prefer server 'project_count' if present.)
-  const [countsByCertId, setCountsByCertId] = useState({}); // { [certId]: number }
-  const [countErrors, setCountErrors] = useState({}); // avoid spamming
+  // per-certificate projects count (cached)
+  const [countsByCertId, setCountsByCertId] = useState({});
+  const [countErrors, setCountErrors] = useState({});
 
   // Visible cert IDs (current page slice only)
-  const visibleCertIds = useMemo(
-    () => certificates.map((c) => c.id),
-    [certificates]
-  );
+  const visibleCertIds = useMemo(() => certificates.map((c) => c.id), [certificates]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,11 +111,7 @@ export default function CertificatesPage() {
         let count = 0;
         if (Array.isArray(data)) {
           count = data.length;
-        } else if (
-          typeof data === "object" &&
-          data &&
-          typeof data.count === "number"
-        ) {
+        } else if (typeof data === "object" && data && typeof data.count === "number") {
           count = data.count;
         } else if (Array.isArray(data?.results)) {
           count = data.results.length;
@@ -171,7 +155,10 @@ export default function CertificatesPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <h1 className="font-heading text-2xl mb-4">Certificates</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="font-heading text-2xl">Certificates</h1>
+        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
+      </div>
 
       {/* Active id filter chip (appears only when ?id= is present) */}
       {idParam && (
@@ -220,12 +207,8 @@ export default function CertificatesPage() {
       </div>
 
       {/* States */}
-      {certificatesLoading && (
-        <div className="opacity-80 mb-4">Loading certificates…</div>
-      )}
-      {certificatesError && (
-        <div className="text-accent mb-4">Error: {certificatesError}</div>
-      )}
+      {certificatesLoading && <div className="opacity-80 mb-4">Loading certificates…</div>}
+      {certificatesError && <div className="text-accent mb-4">Error: {certificatesError}</div>}
       {!certificatesLoading && !certificatesError && certificates.length === 0 && (
         <div className="opacity-80 mb-4">No certificates yet.</div>
       )}
@@ -238,26 +221,17 @@ export default function CertificatesPage() {
           const showPdf = url && isPdfUrl(url);
           const isEditing = editingId === c.id;
 
-          // Prefer server-annotated count if present, else fall back to cached API counts
-          const projCount =
-            typeof c.project_count === "number"
-              ? c.project_count
-              : countsByCertId[c.id];
+          // prefer server-annotated count if present, else fall back to cached API counts
+          const projCount = typeof c.project_count === "number" ? c.project_count : countsByCertId[c.id];
 
           return (
-            <div
-              key={c.id}
-              className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col"
-            >
+            <div key={c.id} className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col">
               {/* VIEW MODE */}
               {!isEditing && (
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div
-                        className="font-semibold truncate"
-                        title={c.title}
-                      >
+                      <div className="font-semibold truncate" title={c.title}>
                         {c.title}
                       </div>
                       <div className="text-sm text-gray-300 truncate">
@@ -299,30 +273,20 @@ export default function CertificatesPage() {
                             height="220"
                             className="rounded border border-gray-700"
                           >
-                            <a
-                              className="text-xs underline"
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
+                            <a className="text-xs underline" href={url} target="_blank" rel="noreferrer">
                               Open PDF
                             </a>
                           </object>
                         </div>
                       ) : null}
 
-                      <a
-                        className="text-xs mt-2 inline-block underline"
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a className="text-xs mt-2 inline-block underline" href={url} target="_blank" rel="noreferrer">
                         View file
                       </a>
                     </>
                   )}
 
-                  {/* Footer: projects count + (conditionally) link */}
+                  {/* Footer */}
                   <div className="mt-3 pt-3 border-t border-gray-700 flex items-center justify-between">
                     <div className="text-sm opacity-80">
                       Projects:{" "}
@@ -331,12 +295,8 @@ export default function CertificatesPage() {
                       </span>
                     </div>
 
-                    {/* Show link only when there's at least 1 linked project */}
                     {typeof projCount === "number" && projCount > 0 && (
-                      <Link
-                        to={`/projects?certificate=${c.id}`}
-                        className="text-xs underline opacity-90 hover:opacity-100"
-                      >
+                      <Link to={`/projects?certificate=${c.id}`} className="text-xs underline opacity-90 hover:opacity-100">
                         View projects
                       </Link>
                     )}
@@ -351,15 +311,8 @@ export default function CertificatesPage() {
                     initial={c}
                     submitLabel="Save changes"
                     onSubmit={(form) => handleEditSubmit(c.id, form)}
+                    onCancel={() => setEditingId(null)}
                   />
-                  <div className="flex items-center gap-2 -mt-2 mb-2">
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
-                    >
-                      Cancel
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
@@ -370,19 +323,22 @@ export default function CertificatesPage() {
       {/* Toggle button */}
       <div className="max-w-xl">
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => setShowForm(true)}
           className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
         >
-          {showForm ? "Hide Add Certificate" : "Add Certificate"}
+          Add Certificate
         </button>
       </div>
 
-      {/* Create Form */}
-      {showForm && (
-        <div ref={formRef} className="max-w-xl mt-4">
-          <CertificateForm submitLabel="Add Certificate" />
+      {/* Create Form in Modal */}
+      <Modal open={showForm} onClose={() => setShowForm(false)} title="Add Certificate">
+        <div ref={formRef}>
+          <CertificateForm
+            submitLabel="Add Certificate"
+            onCancel={() => setShowForm(false)}
+          />
         </div>
-      )}
+      </Modal>
 
       {/* Pagination */}
       <div className="max-w-xl mt-4">

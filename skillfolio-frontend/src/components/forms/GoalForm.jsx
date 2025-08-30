@@ -1,6 +1,6 @@
 /* Docs: see docs/components/forms/GoalForm.md */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 /**
  * GoalForm
@@ -25,6 +25,11 @@ export default function GoalForm({
   onUpdate,
   onCancel,
 }) {
+  const titleId = useId();
+  const targetId = useId();
+  const dateId = useId();
+  const stepId = useId();
+
   const [form, setForm] = useState({
     title: initial?.title || "",
     target_projects: initial?.target_projects ?? "",
@@ -59,6 +64,20 @@ export default function GoalForm({
     setInitialSteps((arr) => arr.filter((_, i) => i !== idx));
   };
 
+  const handleReset = () => {
+    if (initial) {
+      setForm({
+        title: initial?.title || "",
+        target_projects: initial?.target_projects ?? "",
+        deadline: initial?.deadline || "",
+      });
+    } else {
+      setForm({ title: "", target_projects: "", deadline: "" });
+      setInitialSteps([]);
+      setStepInput("");
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -84,40 +103,49 @@ export default function GoalForm({
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-background/80 border border-gray-700 p-4 rounded grid gap-3"
-    >
+    <form onSubmit={handleSubmit} className="grid gap-3">
       {error ? <div className="text-accent text-sm -mb-1">{error}</div> : null}
 
-      <input
-        type="text"
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder="Goal title (e.g., Ship portfolio v1)"
-        value={form.title}
-        onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-        required
-      />
+      <div className="grid gap-1">
+        <label htmlFor={titleId} className="text-sm opacity-80">Goal title</label>
+        <input
+          id={titleId}
+          type="text"
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="e.g., Ship portfolio v1"
+          value={form.title}
+          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          required
+        />
+      </div>
 
-      <input
-        type="number"
-        min={1}
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        placeholder="Target number of completed projects"
-        value={form.target_projects}
-        onChange={(e) =>
-          setForm((f) => ({ ...f, target_projects: e.target.value }))
-        }
-        required
-      />
+      <div className="grid gap-1">
+        <label htmlFor={targetId} className="text-sm opacity-80">Target number of completed projects</label>
+        <input
+          id={targetId}
+          type="number"
+          min={1}
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          placeholder="e.g., 5"
+          value={form.target_projects}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, target_projects: e.target.value }))
+          }
+          required
+        />
+      </div>
 
-      <input
-        type="date"
-        className="rounded p-3 bg-background/60 border border-gray-700"
-        value={form.deadline}
-        onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
-        required
-      />
+      <div className="grid gap-1">
+        <label htmlFor={dateId} className="text-sm opacity-80">Deadline</label>
+        <input
+          id={dateId}
+          type="date"
+          className="rounded p-3 bg-background/60 border border-gray-700"
+          value={form.deadline}
+          onChange={(e) => setForm((f) => ({ ...f, deadline: e.target.value }))}
+          required
+        />
+      </div>
 
       {/* Initial steps builder (only create mode) */}
       {!initial && (
@@ -126,6 +154,7 @@ export default function GoalForm({
 
           <div className="flex items-center gap-2">
             <input
+              id={stepId}
               ref={inputRef}
               className="rounded p-2 bg-background/60 border border-gray-700 flex-1 text-sm"
               placeholder="e.g., Outline tasks"
@@ -177,6 +206,14 @@ export default function GoalForm({
           {submitting ? (initial ? "Saving…" : "Creating…") : submitLabel}
         </button>
 
+        <button
+          type="button"
+          className="px-4 py-3 rounded border border-gray-600 hover:bg-white/5"
+          onClick={handleReset}
+        >
+          Reset
+        </button>
+
         {onCancel && (
           <button
             type="button"
@@ -190,5 +227,3 @@ export default function GoalForm({
     </form>
   );
 }
-
-
