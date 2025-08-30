@@ -38,9 +38,12 @@ export default function CertificatesPage() {
   const search = sp.get("search") || "";
   const ordering = sp.get("ordering") || "";
   const page = sp.get("page") || 1;
+  const idParam = sp.get("id") || ""; // NEW: support /certificates?id=<pk>
+
   const filters = {
     issuer: sp.get("issuer") || "",
     date_earned: sp.get("date_earned") || "",
+    id: idParam, // NEW: pass pk to API when present
   };
 
   // Store state + actions
@@ -71,7 +74,16 @@ export default function CertificatesPage() {
   // Fetch certificates whenever query params change
   useEffect(() => {
     fetchCertificates({ search, ordering, filters, page });
-  }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned]);
+    // include filters.id so /certificates?id=... refetches
+  }, [
+    fetchCertificates,
+    search,
+    ordering,
+    page,
+    filters.issuer,
+    filters.date_earned,
+    filters.id,
+  ]);
 
   // Scroll when opening the form
   useEffect(() => {
@@ -97,7 +109,10 @@ export default function CertificatesPage() {
   const [countErrors, setCountErrors] = useState({}); // avoid spamming
 
   // Visible cert IDs (current page slice only)
-  const visibleCertIds = useMemo(() => certificates.map((c) => c.id), [certificates]);
+  const visibleCertIds = useMemo(
+    () => certificates.map((c) => c.id),
+    [certificates]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -108,7 +123,11 @@ export default function CertificatesPage() {
         let count = 0;
         if (Array.isArray(data)) {
           count = data.length;
-        } else if (typeof data === "object" && data && typeof data.count === "number") {
+        } else if (
+          typeof data === "object" &&
+          data &&
+          typeof data.count === "number"
+        ) {
           count = data.count;
         } else if (Array.isArray(data?.results)) {
           count = data.results.length;
@@ -154,6 +173,28 @@ export default function CertificatesPage() {
     <div className="min-h-screen bg-background text-text p-6">
       <h1 className="font-heading text-2xl mb-4">Certificates</h1>
 
+      {/* Active id filter chip (appears only when ?id= is present) */}
+      {idParam && (
+        <div className="mb-3 text-sm">
+          <span className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-gray-600">
+            <span className="opacity-90">
+              Filtered by certificate id: <strong>#{idParam}</strong>
+            </span>
+            <button
+              className="underline hover:opacity-80"
+              onClick={() => {
+                const next = new URLSearchParams(sp);
+                next.delete("id");
+                next.delete("page");
+                setSp(next);
+              }}
+            >
+              Clear filter
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Controls: Search / Filters / Sort */}
       <div className="grid gap-3 mb-6 max-w-xl">
         <SearchBar
@@ -179,8 +220,12 @@ export default function CertificatesPage() {
       </div>
 
       {/* States */}
-      {certificatesLoading && <div className="opacity-80 mb-4">Loading certificates…</div>}
-      {certificatesError && <div className="text-accent mb-4">Error: {certificatesError}</div>}
+      {certificatesLoading && (
+        <div className="opacity-80 mb-4">Loading certificates…</div>
+      )}
+      {certificatesError && (
+        <div className="text-accent mb-4">Error: {certificatesError}</div>
+      )}
       {!certificatesLoading && !certificatesError && certificates.length === 0 && (
         <div className="opacity-80 mb-4">No certificates yet.</div>
       )}
@@ -193,17 +238,28 @@ export default function CertificatesPage() {
           const showPdf = url && isPdfUrl(url);
           const isEditing = editingId === c.id;
 
-          // NEW: prefer server-annotated count if present, else fall back to cached API counts
-          const projCount = (typeof c.project_count === "number") ? c.project_count : countsByCertId[c.id];
+          // Prefer server-annotated count if present, else fall back to cached API counts
+          const projCount =
+            typeof c.project_count === "number"
+              ? c.project_count
+              : countsByCertId[c.id];
 
           return (
-            <div key={c.id} className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col">
+            <div
+              key={c.id}
+              className="p-3 rounded border border-gray-700 bg-background/70 flex flex-col"
+            >
               {/* VIEW MODE */}
               {!isEditing && (
                 <>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-semibold truncate" title={c.title}>{c.title}</div>
+                      <div
+                        className="font-semibold truncate"
+                        title={c.title}
+                      >
+                        {c.title}
+                      </div>
                       <div className="text-sm text-gray-300 truncate">
                         {c.issuer} • {c.date_earned}
                       </div>
@@ -243,14 +299,24 @@ export default function CertificatesPage() {
                             height="220"
                             className="rounded border border-gray-700"
                           >
-                            <a className="text-xs underline" href={url} target="_blank" rel="noreferrer">
+                            <a
+                              className="text-xs underline"
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               Open PDF
                             </a>
                           </object>
                         </div>
                       ) : null}
 
-                      <a className="text-xs mt-2 inline-block underline" href={url} target="_blank" rel="noreferrer">
+                      <a
+                        className="text-xs mt-2 inline-block underline"
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         View file
                       </a>
                     </>
@@ -265,7 +331,7 @@ export default function CertificatesPage() {
                       </span>
                     </div>
 
-                    {/* NEW: show link only when there's at least 1 linked project */}
+                    {/* Show link only when there's at least 1 linked project */}
                     {typeof projCount === "number" && projCount > 0 && (
                       <Link
                         to={`/projects?certificate=${c.id}`}

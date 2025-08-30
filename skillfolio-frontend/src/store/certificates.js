@@ -8,14 +8,19 @@ const qs = (obj = {}) =>
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
     .join("&");
 
-// GET /api/certificates/?page=&search=&ordering=&issuer=&date_earned=
-export async function listCertificates({ page, search, filters = {}, ordering } = {}) {
+// GET /api/certificates/?page=&search=&ordering=&issuer=&date_earned=&id=
+export async function listCertificates({ page, search, filters = {}, ordering, id } = {}) {
+  // Accept both filters.id and a top-level id (belt & suspenders)
+  const mergedFilters = { ...filters };
+  if (id !== undefined && id !== null && id !== "") mergedFilters.id = id;
+
   const params = {
     page,
     search,
     ordering, // 'date_earned', '-date_earned', 'title', '-title'
-    ...filters, // issuer, date_earned, etc.
+    ...mergedFilters, // issuer, date_earned, id
   };
+
   const q = qs(params);
   const url = `/api/certificates/${q ? `?${q}` : ""}`;
   const { data } = await api.get(url);
