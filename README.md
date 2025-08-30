@@ -6,7 +6,7 @@ Skillfolio helps self-learners archive certificates, document projects, and hit 
   - Backend: Django + DRF (JWT auth)
   - Data sources: Live API + a small local JSON “feed” for public announcements
 
-[Frontend Tests](https://github.com/AminaAzzmouri/skillfolio-frontend/actions/workflows/frontend-tests.yml/badge.svg)
+![Frontend Tests](https://github.com/AminaAzzmouri/skillfolio-frontend/actions/workflows/frontend-tests.yml/badge.svg)
 
 - Tests run automatically on GitHub Actions with Python 3.11
 ---
