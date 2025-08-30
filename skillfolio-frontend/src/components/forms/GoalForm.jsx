@@ -9,6 +9,7 @@ import { useEffect, useId, useRef, useState } from "react";
  *
  * Props:
  *  - initial?              goal object for edit mode
+ *  - initialDraft?         OPTIONAL defaults for create mode (prefill without edit mode)
  *  - submitting?           boolean
  *  - error?                string
  *  - submitLabel?          string
@@ -18,6 +19,7 @@ import { useEffect, useId, useRef, useState } from "react";
  */
 export default function GoalForm({
   initial = null,
+  initialDraft = null, // <<< NEW
   submitting = false,
   error = "",
   submitLabel = initial ? "Save changes" : "Create Goal",
@@ -30,10 +32,11 @@ export default function GoalForm({
   const dateId = useId();
   const stepId = useId();
 
+  // Use initial if provided (edit mode), else fall back to initialDraft (create mode prefill)
   const [form, setForm] = useState({
-    title: initial?.title || "",
-    target_projects: initial?.target_projects ?? "",
-    deadline: initial?.deadline || "",
+    title: initial?.title ?? initialDraft?.title ?? "",
+    target_projects: initial?.target_projects ?? initialDraft?.target_projects ?? "",
+    deadline: initial?.deadline ?? initialDraft?.deadline ?? "",
   });
 
   // Only in create mode
@@ -71,6 +74,14 @@ export default function GoalForm({
         target_projects: initial?.target_projects ?? "",
         deadline: initial?.deadline || "",
       });
+    } else if (initialDraft) { // <<< NEW
+      setForm({
+        title: initialDraft?.title || "",
+        target_projects: initialDraft?.target_projects ?? "",
+        deadline: initialDraft?.deadline || "",
+      });
+      setInitialSteps([]);
+      setStepInput("");
     } else {
       setForm({ title: "", target_projects: "", deadline: "" });
       setInitialSteps([]);
@@ -126,7 +137,7 @@ export default function GoalForm({
           type="number"
           min={1}
           className="rounded p-3 bg-background/60 border border-gray-700"
-          placeholder="e.g., 5"
+          placeholder="e.g., 1"
           value={form.target_projects}
           onChange={(e) =>
             setForm((f) => ({ ...f, target_projects: e.target.value }))
@@ -200,7 +211,7 @@ export default function GoalForm({
 
       <div className="flex items-center gap-2">
         <button
-          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition disabled:opacity-60"
+          className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition disabled:opacity-60"
           disabled={disabled}
         >
           {submitting ? (initial ? "Saving…" : "Creating…") : submitLabel}
