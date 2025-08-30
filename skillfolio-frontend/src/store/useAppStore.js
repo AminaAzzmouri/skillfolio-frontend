@@ -21,7 +21,7 @@ import {
   deleteProject as apiDeleteProject,
 } from "./projects";
 
-// ---- Goals API helpers (new) ----
+// ---- Goals API helpers ----
 import {
   listGoals,
   createGoal as apiCreateGoal,
@@ -173,7 +173,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   // -----------------------
-  // Goals (LIVE API) — NEW
+  // Goals (LIVE API)
   // -----------------------
   goals: [],
   goalsLoading: false,
@@ -186,7 +186,7 @@ export const useAppStore = create((set, get) => ({
       const data = await listGoals(params);
       const items = Array.isArray(data) ? data : data?.results || [];
       set({ goals: items, goalsLoading: false });
-      // If paginated, also set goalsMeta.count the same way as above
+      // If paginated later, also set goalsMeta.count the same way as above
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -197,9 +197,17 @@ export const useAppStore = create((set, get) => ({
     }
   },
 
-  async createGoal({ target_projects, deadline }) {
+  /**
+   * Create Goal — now accepts:
+   * - title
+   * - target_projects
+   * - deadline
+   * - total_steps (seeded from initial steps builder)
+   * - completed_steps (usually 0 on create)
+   */
+  async createGoal({ title, target_projects, deadline, total_steps = 0, completed_steps = 0 }) {
     set({ goalsError: null });
-    const created = await apiCreateGoal({ target_projects, deadline });
+    const created = await apiCreateGoal({ title, target_projects, deadline, total_steps, completed_steps });
     set((s) => ({ goals: [created, ...s.goals] }));
     return created;
   },
