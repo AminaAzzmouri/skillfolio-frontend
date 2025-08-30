@@ -1,6 +1,6 @@
 /* Docs: see docs/pages/GoalsPage.md */
 
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { createGoalStep, updateGoalStep, deleteGoalStep } from "../store/goals";
@@ -26,52 +26,265 @@ function bucketForGoal(g) {
   return "in_progress";
 }
 
-/** Keeps focus stable even if parent re-renders */
-function AddStepRow({ value, onChange, onAdd }) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    // Re-focus after every value change; preserves typing continuity.
-    ref.current?.focus();
-    // place caret at end
-    const el = ref.current;
-    if (el && typeof el.selectionStart === "number") {
-      const end = el.value.length;
-      el.selectionStart = end;
-      el.selectionEnd = end;
-    }
-  }, [value]);
-
-  const submit = useCallback(() => {
-    const t = (value || "").trim();
-    if (!t) return;
-    onChange(""); // clear immediately
-    onAdd(t);
-  }, [value, onAdd, onChange]);
-
+/** ---- Top-level child to keep identity stable across renders ---- */
+function Section({
+  title,
+  items,
+  goalsLoading,
+  collapsed,
+  toggleCollapsed,
+  stepsMap,
+  stepInputs,
+  onStepInputChange,
+  addStep,
+  moveStep,
+  toggleStep,
+  startEditStep,
+  deleteStepLocal,
+  editingStepId,
+  editingTitle,
+  setEditingTitle,
+  saveEditStep,
+  cancelEditStep,
+  editingId,
+  setEditingId,
+  submitting,
+  submitError,
+  handleUpdate,
+}) {
   return (
-    <div className="flex items-center gap-2 mt-2">
-      <input
-        ref={ref}
-        className="rounded p-2 bg-background/60 border border-gray-700 flex-1 text-sm"
-        placeholder="Add a step…"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            submit();
-          }
-        }}
-      />
-      <button
-        type="button"
-        className="rounded bg-secondary/70 px-3 py-2 text-sm hover:bg-secondary/90 transition"
-        onClick={submit}
-      >
-        Add
-      </button>
-    </div>
+    <section className="mb-8">
+      <h2 className="font-heading text-xl mb-3">{title}</h2>
+
+      {goalsLoading && items.length === 0 ? (
+        <div className="opacity-80 mb-2">Loading…</div>
+      ) : items.length === 0 ? (
+        <div className="opacity-70 text-sm">No goals here.</div>
+      ) : (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map((g) => {
+            const steps = stepsMap[g.id] || [];
+            const isCollapsed = collapsed.has(g.id);
+            const isEditing = editingId === g.id;
+            const showNudge = (g.daysLeft ?? 0) <= 3;
+
+            return (
+              <li key={g.id} className="p-3 rounded border border-gray-700 bg-background/70">
+                {!isEditing ? (
+                  <>
+                    {/* header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-semibold truncate">{g.title || "Untitled goal"}</div>
+                        <div className="text-sm opacity-80">
+                          Target: {g.target_projects} projects by {formatDate(g.deadline)}
+                        </div>
+                        <div className="text-xs opacity-80 mt-1">
+                          {g.daysLeft > 0
+                            ? `${g.daysLeft} day${g.daysLeft === 1 ? "" : "s"} left`
+                            : g.daysLeft === 0
+                            ? "Today!"
+                            : `${Math.abs(g.daysLeft)} day${Math.abs(g.daysLeft) === 1 ? "" : "s"} past deadline`}
+                        </div>
+                        {showNudge && (
+                          <div className="mt-2 text-xs rounded bg-accent/20 border border-accent/40 p-2">
+                            ⏰ Heads up: deadline is very close. You’ve got this!
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(g.id)}
+                          className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={g._onAskDelete}
+                          className="px-3 py-1 rounded bg-accent text-black font-semibold hover:bg-accent/80"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* progress */}
+                    <div className="mt-3">
+                      <ProgressBar value={g.progress_percent ?? 0} label="Progress (from completed projects)" />
+                    </div>
+                    <div className="mt-2">
+                      <ProgressBar
+                        value={g.steps_progress_percent ?? 0}
+                        label={`Checklist Progress (${g.completed_steps ?? 0} / ${g.total_steps ?? 0})`}
+                      />
+                    </div>
+
+                    {/* Steps header + collapse toggle */}
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-sm font-semibold">Steps</div>
+                      <button
+                        type="button"
+                        className="text-xs underline hover:opacity-80"
+                        onClick={() => toggleCollapsed(g.id)}
+                      >
+                        {isCollapsed ? "Show steps" : "Hide steps"}
+                      </button>
+                    </div>
+
+                    {!isCollapsed && (
+                      <>
+                        {/* add step */}
+                        <div className="flex items-center gap-2 mt-2">
+                          <input
+                            className="rounded p-2 bg-background/60 border border-gray-700 flex-1 text-sm"
+                            placeholder="Add a step…"
+                            value={stepInputs[g.id] || ""}
+                            onChange={(e) => onStepInputChange(g.id, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                const t = stepInputs[g.id] || "";
+                                onStepInputChange(g.id, "");
+                                addStep(g.id, t);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="rounded bg-secondary/70 px-3 py-2 text-sm hover:bg-secondary/90 transition"
+                            onClick={() => {
+                              const t = stepInputs[g.id] || "";
+                              onStepInputChange(g.id, "");
+                              addStep(g.id, t);
+                            }}
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        {/* steps list */}
+                        <ul className="mt-2 space-y-1">
+                          {steps.length === 0 ? (
+                            <li className="text-xs opacity-70">No steps yet. Add your first one.</li>
+                          ) : (
+                            steps.map((s, idx) => (
+                              <li
+                                key={s.id}
+                                className="flex items-center justify-between gap-2 text-sm p-2 rounded border border-gray-800"
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    id={`step-${s.id}`}
+                                    type="checkbox"
+                                    checked={!!s.is_done}
+                                    onChange={() => toggleStep(g.id, s)}
+                                  />
+                                  {editingStepId === s.id ? (
+                                    <input
+                                      className="rounded p-1 bg-background/60 border border-gray-700 text-sm w-full"
+                                      value={editingTitle}
+                                      onChange={(e) => setEditingTitle(e.target.value)}
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") saveEditStep(g.id, s.id);
+                                        if (e.key === "Escape") cancelEditStep();
+                                      }}
+                                    />
+                                  ) : (
+                                    <label
+                                      htmlFor={`step-${s.id}`}
+                                      className={`${s.is_done ? "line-through opacity-70" : ""} cursor-pointer flex-1`}
+                                    >
+                                      {s.title}
+                                    </label>
+                                  )}
+                                </div>
+
+                                <div className="flex items-center gap-1">
+                                  {editingStepId === s.id ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-primary hover:bg-primary/80"
+                                        onClick={() => saveEditStep(g.id, s.id)}
+                                        title="Save"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
+                                        onClick={cancelEditStep}
+                                        title="Cancel"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
+                                        onClick={() => moveStep(g.id, s.id, -1)}
+                                        title="Move up"
+                                        disabled={idx === 0}
+                                      >
+                                        ↑
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
+                                        onClick={() => moveStep(g.id, s.id, +1)}
+                                        title="Move down"
+                                        disabled={idx === steps.length - 1}
+                                      >
+                                        ↓
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
+                                        onClick={() => startEditStep(s)}
+                                        title="Rename"
+                                      >
+                                        ✏️
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-xs rounded px-2 py-1 bg-accent/80 hover:bg-accent"
+                                        onClick={() => deleteStepLocal(g.id, s.id)}
+                                        title="Delete step"
+                                      >
+                                        🗑
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <GoalForm
+                    initial={g}
+                    submitting={submitting}
+                    error={submitError}
+                    onUpdate={handleUpdate}
+                    onCancel={() => setEditingId(null)}
+                    submitLabel="Save changes"
+                  />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -128,17 +341,46 @@ export default function GoalsPage() {
     fetchGoals();
   }, [fetchGoals]);
 
-  // hydrate steps list from server
+  // hydrate stepsMap from goals, but only when data actually changed (focus-safe)
   useEffect(() => {
-    const map = {};
-    for (const g of goals || []) {
-      const sorted = [...(g.steps || [])].sort((a, b) => {
-        if (a.order === b.order) return a.id - b.id;
-        return (a.order ?? 0) - (b.order ?? 0);
-      });
-      map[g.id] = sorted;
-    }
-    setStepsMap(map);
+    setStepsMap((prev) => {
+      const next = {};
+      let changed = false;
+
+      for (const g of goals || []) {
+        const sorted = [...(g.steps || [])].sort((a, b) => {
+          if (a.order === b.order) return a.id - b.id;
+          return (a.order ?? 0) - (b.order ?? 0);
+        });
+        next[g.id] = sorted;
+
+        const prevList = prev[g.id] || [];
+        if (!changed) {
+          if (prevList.length !== sorted.length) {
+            changed = true;
+          } else {
+            for (let i = 0; i < sorted.length; i++) {
+              const a = prevList[i];
+              const b = sorted[i];
+              if (!a || !b || a.id !== b.id || a.title !== b.title || a.is_done !== b.is_done || a.order !== b.order) {
+                changed = true;
+                break;
+              }
+            }
+          }
+        }
+      }
+
+      // also check for removed goals
+      if (!changed) {
+        const prevKeys = Object.keys(prev);
+        const nextKeys = Object.keys(next);
+        if (prevKeys.length !== nextKeys.length) changed = true;
+        else if (prevKeys.some((k, i) => k !== nextKeys[i])) changed = true;
+      }
+
+      return changed ? next : prev;
+    });
   }, [goals]);
 
   const goalsWithDays = useMemo(
@@ -147,6 +389,7 @@ export default function GoalsPage() {
         ...g,
         daysLeft: daysUntil(g.deadline),
         _bucket: bucketForGoal(g),
+        _onAskDelete: () => setConfirmDeleteId(g.id),
       })),
     [goals]
   );
@@ -258,6 +501,26 @@ export default function GoalsPage() {
     }
   };
 
+  // robust reorder: reindex locally and persist all orders
+  const moveStep = async (goalId, stepId, dir) => {
+    const list = [...(stepsMap[goalId] || [])];
+    const idx = list.findIndex((s) => s.id === stepId);
+    const to = idx + dir;
+    if (idx < 0 || to < 0 || to >= list.length) return;
+
+    [list[idx], list[to]] = [list[to], list[idx]];
+    const reindexed = list.map((s, i) => ({ ...s, order: i }));
+    setStepsFor(goalId, reindexed);
+
+    try {
+      await Promise.all(reindexed.map((s) => updateGoalStep(s.id, { order: s.order })));
+      setStepsFor(goalId, [...reindexed].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+    } catch (e) {
+      alert(e?.response?.data?.detail || e?.message || "Failed to reorder step");
+      fetchGoals();
+    }
+  };
+
   // inline edit state per step
   const [editingStepId, setEditingStepId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -274,219 +537,10 @@ export default function GoalsPage() {
     cancelEditStep();
   };
 
-  // add-step input per goal (controlled values)
+  // add-step input per goal
   const [stepInputs, setStepInputs] = useState({});
-  const onStepInputChange = useCallback(
-    (goalId, val) => setStepInputs((m) => ({ ...m, [goalId]: val })),
-    []
-  );
-
-  const Section = ({ title, items }) => (
-    <section className="mb-8">
-      <h2 className="font-heading text-xl mb-3">{title}</h2>
-
-      {goalsLoading && items.length === 0 ? (
-        <div className="opacity-80 mb-2">Loading…</div>
-      ) : items.length === 0 ? (
-        <div className="opacity-70 text-sm">No goals here.</div>
-      ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((g) => {
-            const steps = stepsMap[g.id] || [];
-            const isCollapsed = collapsed.has(g.id);
-            const isEditing = editingId === g.id;
-            const showNudge = (g.daysLeft ?? 0) <= 3;
-
-            return (
-              <li key={g.id} className="p-3 rounded border border-gray-700 bg-background/70">
-                {!isEditing ? (
-                  <>
-                    {/* header */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="font-semibold truncate">{g.title || "Untitled goal"}</div>
-                        <div className="text-sm opacity-80">
-                          Target: {g.target_projects} projects by {formatDate(g.deadline)}
-                        </div>
-                        <div className="text-xs opacity-80 mt-1">
-                          {g.daysLeft > 0
-                            ? `${g.daysLeft} day${g.daysLeft === 1 ? "" : "s"} left`
-                            : g.daysLeft === 0
-                            ? "Today!"
-                            : `${Math.abs(g.daysLeft)} day${Math.abs(g.daysLeft) === 1 ? "" : "s"} past deadline`}
-                        </div>
-                        {showNudge && (
-                          <div className="mt-2 text-xs rounded bg-accent/20 border border-accent/40 p-2">
-                            ⏰ Heads up: deadline is very close. You’ve got this!
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => setEditingId(g.id)}
-                          className="px-3 py-1 rounded border border-gray-600 hover:bg-white/5"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setConfirmDeleteId(g.id)}
-                          className="px-3 py-1 rounded bg-accent text-black font-semibold hover:bg-accent/80"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* progress */}
-                    <div className="mt-3">
-                      <ProgressBar value={g.progress_percent ?? 0} label="Progress (from completed projects)" />
-                    </div>
-                    <div className="mt-2">
-                      <ProgressBar
-                        value={g.steps_progress_percent ?? 0}
-                        label={`Checklist Progress (${g.completed_steps ?? 0} / ${g.total_steps ?? 0})`}
-                      />
-                    </div>
-
-                    {/* Steps header + collapse toggle */}
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="text-sm font-semibold">Steps</div>
-                      <button
-                        type="button"
-                        className="text-xs underline hover:opacity-80"
-                        onClick={() => toggleCollapsed(g.id)}
-                      >
-                        {isCollapsed ? "Show steps" : "Hide steps"}
-                      </button>
-                    </div>
-
-                    {!isCollapsed && (
-                      <>
-                        {/* add step (focus-stable row) */}
-                        <AddStepRow
-                          value={stepInputs[g.id] || ""}
-                          onChange={(v) => onStepInputChange(g.id, v)}
-                          onAdd={(t) => addStep(g.id, t)}
-                        />
-
-                        {/* steps list */}
-                        <ul className="mt-2 space-y-1">
-                          {steps.length === 0 ? (
-                            <li className="text-xs opacity-70">No steps yet. Add your first one.</li>
-                          ) : (
-                            steps.map((s, idx) => (
-                              <li
-                                key={s.id}
-                                className="flex items-center justify-between gap-2 text-sm p-2 rounded border border-gray-800"
-                              >
-                                <label className="flex items-center gap-2 flex-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={!!s.is_done}
-                                    onChange={() => toggleStep(g.id, s)}
-                                  />
-                                  {editingStepId === s.id ? (
-                                    <input
-                                      className="rounded p-1 bg-background/60 border border-gray-700 text-sm w-full"
-                                      value={editingTitle}
-                                      onChange={(e) => setEditingTitle(e.target.value)}
-                                      autoFocus
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") saveEditStep(g.id, s.id);
-                                        if (e.key === "Escape") cancelEditStep();
-                                      }}
-                                    />
-                                  ) : (
-                                    <span className={s.is_done ? "line-through opacity-70" : ""}>{s.title}</span>
-                                  )}
-                                </label>
-
-                                <div className="flex items-center gap-1">
-                                  {editingStepId === s.id ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-primary hover:bg-primary/80"
-                                        onClick={() => saveEditStep(g.id, s.id)}
-                                        title="Save"
-                                      >
-                                        Save
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
-                                        onClick={cancelEditStep}
-                                        title="Cancel"
-                                      >
-                                        Cancel
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
-                                        onClick={() => moveStep(g.id, s.id, -1)}
-                                        title="Move up"
-                                        disabled={idx === 0}
-                                      >
-                                        ↑
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
-                                        onClick={() => moveStep(g.id, s.id, +1)}
-                                        title="Move down"
-                                        disabled={idx === steps.length - 1}
-                                      >
-                                        ↓
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-gray-800 hover:bg-gray-700"
-                                        onClick={() => startEditStep(s)}
-                                        title="Rename"
-                                      >
-                                        ✏️
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="text-xs rounded px-2 py-1 bg-accent/80 hover:bg-accent"
-                                        onClick={() => deleteStepLocal(g.id, s.id)}
-                                        title="Delete step"
-                                      >
-                                        🗑
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </li>
-                            ))
-                          )}
-                        </ul>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <GoalForm
-                    initial={g}
-                    submitting={submitting}
-                    error={submitError}
-                    onUpdate={handleUpdate}
-                    onCancel={() => setEditingId(null)}
-                    submitLabel="Save changes"
-                  />
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
-  );
+  const onStepInputChange = (goalId, val) =>
+    setStepInputs((m) => ({ ...m, [goalId]: val }));
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
@@ -522,9 +576,81 @@ export default function GoalsPage() {
       </Modal>
 
       {/* Sections */}
-      <Section title="In progress" items={inProgress} />
-      <Section title="Completed" items={completed} />
-      <Section title="Not started" items={notStarted} />
+      <Section
+        title="In progress"
+        items={goalsWithDays.filter((g) => g._bucket === "in_progress")}
+        goalsLoading={goalsLoading}
+        collapsed={collapsed}
+        toggleCollapsed={toggleCollapsed}
+        stepsMap={stepsMap}
+        stepInputs={stepInputs}
+        onStepInputChange={onStepInputChange}
+        addStep={addStep}
+        moveStep={moveStep}
+        toggleStep={toggleStep}
+        startEditStep={startEditStep}
+        deleteStepLocal={deleteStepLocal}
+        editingStepId={editingStepId}
+        editingTitle={editingTitle}
+        setEditingTitle={setEditingTitle}
+        saveEditStep={saveEditStep}
+        cancelEditStep={cancelEditStep}
+        editingId={editingId}
+        setEditingId={setEditingId}
+        submitting={submitting}
+        submitError={submitError}
+        handleUpdate={handleUpdate}
+      />
+      <Section
+        title="Completed"
+        items={goalsWithDays.filter((g) => g._bucket === "completed")}
+        goalsLoading={goalsLoading}
+        collapsed={collapsed}
+        toggleCollapsed={toggleCollapsed}
+        stepsMap={stepsMap}
+        stepInputs={stepInputs}
+        onStepInputChange={onStepInputChange}
+        addStep={addStep}
+        moveStep={moveStep}
+        toggleStep={toggleStep}
+        startEditStep={startEditStep}
+        deleteStepLocal={deleteStepLocal}
+        editingStepId={editingStepId}
+        editingTitle={editingTitle}
+        setEditingTitle={setEditingTitle}
+        saveEditStep={saveEditStep}
+        cancelEditStep={cancelEditStep}
+        editingId={editingId}
+        setEditingId={setEditingId}
+        submitting={submitting}
+        submitError={submitError}
+        handleUpdate={handleUpdate}
+      />
+      <Section
+        title="Not started"
+        items={goalsWithDays.filter((g) => g._bucket === "not_started")}
+        goalsLoading={goalsLoading}
+        collapsed={collapsed}
+        toggleCollapsed={toggleCollapsed}
+        stepsMap={stepsMap}
+        stepInputs={stepInputs}
+        onStepInputChange={onStepInputChange}
+        addStep={addStep}
+        moveStep={moveStep}
+        toggleStep={toggleStep}
+        startEditStep={startEditStep}
+        deleteStepLocal={deleteStepLocal}
+        editingStepId={editingStepId}
+        editingTitle={editingTitle}
+        setEditingTitle={setEditingTitle}
+        saveEditStep={saveEditStep}
+        cancelEditStep={cancelEditStep}
+        editingId={editingId}
+        setEditingId={setEditingId}
+        submitting={submitting}
+        submitError={submitError}
+        handleUpdate={handleUpdate}
+      />
 
       <ConfirmDialog
         open={!!confirmDeleteId}
@@ -536,3 +662,5 @@ export default function GoalsPage() {
     </div>
   );
 }
+
+
