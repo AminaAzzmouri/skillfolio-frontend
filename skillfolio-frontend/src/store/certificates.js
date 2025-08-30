@@ -34,9 +34,7 @@ export async function createCertificateMultipart({ title, issuer, date_earned, f
   fd.append("issuer", issuer);
   fd.append("date_earned", date_earned);
   if (file) fd.append("file_upload", file);
-  const { data } = await api.post("/api/certificates/", fd, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await api.post("/api/certificates/", fd);
   return data;
 }
 
@@ -51,9 +49,7 @@ export async function updateCertificate(id, payload) {
         fd.append(k, v);
       }
     }
-    const { data } = await api.patch(`/api/certificates/${id}/`, fd, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const { data } = await api.patch(`/api/certificates/${id}/`, fd)
     return data;
   } else {
     const { data } = await api.patch(`/api/certificates/${id}/`, payload);
