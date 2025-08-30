@@ -1,6 +1,6 @@
 /* Docs: see docs/pages/GoalsPage.md */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { createGoalStep, updateGoalStep, deleteGoalStep } from "../store/goals";
@@ -24,6 +24,55 @@ function bucketForGoal(g) {
   if (p >= 100 || s >= 100) return "completed";
   if (p === 0 && s === 0) return "not_started";
   return "in_progress";
+}
+
+/** Keeps focus stable even if parent re-renders */
+function AddStepRow({ value, onChange, onAdd }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    // Re-focus after every value change; preserves typing continuity.
+    ref.current?.focus();
+    // place caret at end
+    const el = ref.current;
+    if (el && typeof el.selectionStart === "number") {
+      const end = el.value.length;
+      el.selectionStart = end;
+      el.selectionEnd = end;
+    }
+  }, [value]);
+
+  const submit = useCallback(() => {
+    const t = (value || "").trim();
+    if (!t) return;
+    onChange(""); // clear immediately
+    onAdd(t);
+  }, [value, onAdd, onChange]);
+
+  return (
+    <div className="flex items-center gap-2 mt-2">
+      <input
+        ref={ref}
+        className="rounded p-2 bg-background/60 border border-gray-700 flex-1 text-sm"
+        placeholder="Add a step…"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submit();
+          }
+        }}
+      />
+      <button
+        type="button"
+        className="rounded bg-secondary/70 px-3 py-2 text-sm hover:bg-secondary/90 transition"
+        onClick={submit}
+      >
+        Add
+      </button>
+    </div>
+  );
 }
 
 export default function GoalsPage() {
@@ -79,7 +128,7 @@ export default function GoalsPage() {
     fetchGoals();
   }, [fetchGoals]);
 
-  // keep steps visible after reload — hydrate from nested serializer data
+  // hydrate steps list from server
   useEffect(() => {
     const map = {};
     for (const g of goals || []) {
@@ -209,26 +258,6 @@ export default function GoalsPage() {
     }
   };
 
-  // robust reorder: reindex locally and persist all orders
-  const moveStep = async (goalId, stepId, dir) => {
-    const list = [...(stepsMap[goalId] || [])];
-    const idx = list.findIndex((s) => s.id === stepId);
-    const to = idx + dir;
-    if (idx < 0 || to < 0 || to >= list.length) return;
-
-    [list[idx], list[to]] = [list[to], list[idx]];
-    const reindexed = list.map((s, i) => ({ ...s, order: i }));
-    setStepsFor(goalId, reindexed);
-
-    try {
-      await Promise.all(reindexed.map((s) => updateGoalStep(s.id, { order: s.order })));
-      setStepsFor(goalId, [...reindexed].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
-    } catch (e) {
-      alert(e?.response?.data?.detail || e?.message || "Failed to reorder step");
-      fetchGoals();
-    }
-  };
-
   // inline edit state per step
   const [editingStepId, setEditingStepId] = useState(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -245,10 +274,12 @@ export default function GoalsPage() {
     cancelEditStep();
   };
 
-  // add-step input per goal
+  // add-step input per goal (controlled values)
   const [stepInputs, setStepInputs] = useState({});
-  const onStepInputChange = (goalId, val) =>
-    setStepInputs((m) => ({ ...m, [goalId]: val }));
+  const onStepInputChange = useCallback(
+    (goalId, val) => setStepInputs((m) => ({ ...m, [goalId]: val })),
+    []
+  );
 
   const Section = ({ title, items }) => (
     <section className="mb-8">
@@ -334,35 +365,12 @@ export default function GoalsPage() {
 
                     {!isCollapsed && (
                       <>
-                        {/* add step */}
-                        <div className="flex items-center gap-2 mt-2">
-                          <input
-                            className="rounded p-2 bg-background/60 border border-gray-700 flex-1 text-sm"
-                            placeholder="Add a step…"
-                            value={stepInputs[g.id] || ""}
-                            onChange={(e) => onStepInputChange(g.id, e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                const t = stepInputs[g.id] || "";
-                                onStepInputChange(g.id, "");
-                                addStep(g.id, t);
-                              }
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="rounded bg-secondary/70 px-3 py-2 text-sm hover:bg-secondary/90 transition"
-                            onClick={() => {
-                              const t = stepInputs[g.id] || "";
-                              onStepInputChange[g.id] = "";
-                              onStepInputChange(g.id, "");
-                              addStep(g.id, t);
-                            }}
-                          >
-                            Add
-                          </button>
-                        </div>
+                        {/* add step (focus-stable row) */}
+                        <AddStepRow
+                          value={stepInputs[g.id] || ""}
+                          onChange={(v) => onStepInputChange(g.id, v)}
+                          onAdd={(t) => addStep(g.id, t)}
+                        />
 
                         {/* steps list */}
                         <ul className="mt-2 space-y-1">
@@ -482,23 +490,25 @@ export default function GoalsPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="font-heading text-2xl">Goals</h1>
         <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
       </div>
 
-      {/* Add button directly under the back link */}
-      <div className="mb-4">
+      {goalsError && <div className="text-accent mb-3">Error: {goalsError}</div>}
+
+      {/* Toggle create */}
+      <div className="max-w-xl mb-4">
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
+          className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition"
         >
           Add Goal
         </button>
       </div>
 
-      {/* Create in Modal (scrollable) */}
+      {/* Create in Modal */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Goal">
         <div ref={formRef}>
           <GoalForm
@@ -526,5 +536,3 @@ export default function GoalsPage() {
     </div>
   );
 }
-
-
