@@ -25,7 +25,7 @@ Skillfolio helps self-learners archive certificates, document projects, and hit 
 
 ---
 
-🧭 Architecture & Repo Map
+## 🧭 Architecture & Repo Map
 
 src/
   components/
@@ -53,7 +53,7 @@ tailwind.config.js (colors via CSS vars, dark mode = class)
 
 ---
 
-✅ What’s Done (from the start → now)
+## ✅ What’s Done (from the start → now)
 
 - Foundations & First Screens
   - Project setup: Vite + Tailwind + folder structure; pushed chore/react-setup
