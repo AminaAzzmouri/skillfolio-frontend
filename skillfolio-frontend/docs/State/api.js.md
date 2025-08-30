@@ -52,11 +52,34 @@ import `api` or `setAuthToken` without worrying about low-level details.
     * Clears stale tokens from localStorage.
     * Hard-redirects to /login if any request comes back unauthorized.
 
+        api.interceptors.response.use(
+          (res) => res,
+          (error) => {
+            if (error?.response?.status === 401) {
+              try {
+                setAuthToken(null);
+                localStorage.removeItem("sf_user");
+              } finally {
+                if (!window.location.pathname.startsWith("/login")) {
+                  window.location.replace("/login");
+                }
+              }
+            }
+            return Promise.reject(error);
+          }
+        );
+
+
 **Logout API Helper**
 
         export async function logoutApi(refresh) {
-          await api.post("/api/auth/logout/", { refresh });
-        }
+          if (!refresh) return;
+          try {
+            await api.post("/api/auth/logout/", { refresh });
+          } catch {
+            // best-effort; FE still clears locally
+            }
+          }
 
     * Blacklists refresh tokens server-side (best-effort).
     * Works in tandem with frontend store logout().

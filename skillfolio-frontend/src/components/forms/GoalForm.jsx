@@ -1,4 +1,4 @@
-/* Docs: see docs/components/forms/GoalForm.md */
+/* Docs: see docs/components/forms/GoalForm.jsx.md */
 
 import { useEffect, useId, useRef, useState } from "react";
 

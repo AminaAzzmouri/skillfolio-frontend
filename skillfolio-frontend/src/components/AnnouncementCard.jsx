@@ -1,3 +1,5 @@
+// Docs: see docs/announcements.md
+
 import { Link } from "react-router-dom";
 
 function fmtDate(s) {

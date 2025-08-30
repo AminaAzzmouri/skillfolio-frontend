@@ -3,44 +3,54 @@
   ## Purpose:
   ================================================================================
 
-  This component serves as the **public entry point** of the Skillfolio app.
-  It introduces new users to the application and encourages them to either sign up or log in. 
-  The landing page is designed with a simple hero section and call-to-action (CTA) buttons to guide the user toward authentication.
-  
-  ================================================================================
+  Public entry point that introduces Skillfolio and funnels visitors to **Sign up** or **Log in**. Uses a clean hero, lightweight product previews, feature highlights, and a simple “How it works” sequence.
 
   ## Structure:
   ================================================================================
 
-  **Background & Layout:** Uses Tailwind custom theme (dark background, light text) for a sleek, professional look.
-  **Hero Section:**
-            • App title: "Skillfolio"
-            • Tagline: "Store your learning journey in one place."
-            • Two CTA buttons:
-                                → "Sign Up" → navigates to /register
-                                → "Log In"  → navigates to /login
+  - **Hero section** 
+      • Big headline: “Build a portfolio of your learning.”
+      • Subtext explaining certificates, projects, skills, goals
+      • “Value chips” for quick scannability
+      • Decorative background flares (subtle Tailwind utility layers)
+
+  - **Product preview cards**
+      • Small static cards for **Certificates**, **Projects**, **Goals** with badges
+
+  - **Features grid**
+      • Four tiles: Certificates / Projects / Goals / Dashboard
+
+- **How it works**
+      • Three simple steps: Capture → Connect → Share
+
+- **CTA section**
+      • Primary: **Create your account** → `/register`
+      • Secondary: **Log in** → `/login`
+
+## Styling:
+================================================================================
+
+- ailwind theme tokens (`bg-background`, `text-text`, `border-border`, `bg-surface/*`).
+- Soft “flare” accents for a friendly, modern look.
+
+## Data:
+================================================================================
+
+- Static page; no API calls.
+
+## Routing:
+================================================================================
+
+- Uses `<Link>` for client-side navigation to **/register** and **/login**.
+
+## Role in Project:
+================================================================================
+
+- Marketing/intro layer for unauthenticated users that clearly communicates value and drives them into the auth flow.
  
-  ================================================================================
+## Future Enhancements:
+================================================================================
 
-  ## Routing:
-  ================================================================================
-
-  - Uses React Router's <Link> to provide client-side navigation.
-  - Ensures smooth navigation without page reloads.
-
-  ================================================================================
-
-  ## Role in Project:
-  ================================================================================
-
-  The landing page is the **first touchpoint** for new and returning users.
-  It clearly communicates the purpose of the app and funnels users into the authentication flow.
- 
-  ================================================================================
- 
-  ## Future Enhancements:
-  ================================================================================
-
-  - Add branding/logo for stronger identity.
-  - Animate hero text/buttons for improved UX.
-  - Display sample screenshots or features below the hero section.
+- Add screenshots or a short demo video.
+- Testimonials and trust markers.
+- Internationalized copy.

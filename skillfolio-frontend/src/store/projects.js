@@ -1,4 +1,4 @@
-/* Docs: see docs/store/projects.js.md */
+/* Documentation: see docs/store/projects.js.md */
 
 import { api } from "../lib/api";
 

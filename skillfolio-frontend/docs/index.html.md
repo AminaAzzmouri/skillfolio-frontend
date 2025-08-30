@@ -1,48 +1,58 @@
 **index.html**:
 
-  ## Purpose:
-  ================================================================================
+## Purpose:
+================================================================================
 
-  This is the **root HTML file** for the Skillfolio frontend.  
-  It serves as the single entry point for the React application when bundled by Vite.  
+- Root HTML shell for the Vite + React app. React mounts into `<div id="root">`. Also:
+- Loads Google Fonts.
+- Sets the **initial theme (light/dark)** *before paint* to prevent a flash of the wrong theme.
 
-  React will **mount the app** inside the `<div id="root"></div>` element.  
-  All further UI rendering is handled dynamically by React components.
+## Key Parts:
+================================================================================
 
-  ================================================================================
+- **Fonts**:
 
-  ## Structure:
-  ================================================================================
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Roboto+Mono:wght@700&display=swap" rel="stylesheet">
 
-  - <!doctype html>: Declares the HTML5 standard.  
-  - <html lang="en">: Base HTML tag with language set to English.  
-  - <head>: Contains metadata and external resources.  
-      • <meta charset="UTF-8"> → Ensures proper text encoding.  
-      • <meta name="viewport" ...> → Makes layout responsive on mobile devices.  
-      • <link rel="icon" ...> → Sets the favicon (vite.svg by default).  
-      • <title>Skillfolio</title> → Page title shown in browser tabs.  
-      • <link href="https://fonts.googleapis.com/..."> → Loads Google Fonts (Roboto + Roboto Mono).  
+- Initial theme script (runs ASAP in <head>):
 
-  - <body>: Contains the **root mount point** (`<div id="root"></div>`)  
-    where React will inject the app.  
-    Loads the compiled JavaScript (`src/main.jsx`) as the entry module.  
+      <script>
+        (function () {
+          try {
+            const saved = localStorage.getItem("sf-theme"); // "light" | "dark" | null
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            const useDark = saved ? saved === "dark" : prefersDark;
+            document.documentElement.classList.toggle("dark", useDark);
+          } catch (e) {}
+        })();
+      </script>
 
-  ================================================================================
+      > Reads user preference from localStorage (sf-theme).
+      > Falls back to OS preference via prefers-color-scheme.
+      > Toggles <html class="dark">, which Tailwind uses for dark mode.
+  
+  - Mount point + entry:
 
-  ## Role in Project:
-  ================================================================================
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
 
-  - Acts as the **shell container** for the React app.  
-  - Provides global resources (fonts, favicon, metadata).  
-  - Ensures responsiveness with viewport meta.  
-  - Delegates all app rendering to React once JS is loaded.  
+## Why the Early Theme Script?
+================================================================================
 
-  ================================================================================
+- Prevents FOUC (flash of unthemed content).
+- Ensures that Tailwind’s dark classes apply before the first paint.
 
-  ## Future Enhancements:
-  ================================================================================
+## Role in Project:
+================================================================================
 
-  - Replace default Vite favicon with Skillfolio's branding icon.  
-  - Add SEO-related meta tags (description, keywords, Open Graph).  
-  - Add dark/light mode theme metadata for better UX.  
-  - Include analytics scripts or PWA support if needed.  
+- Provides the single page shell.
+- Coordinates theming with Tailwind (darkMode: "class").
+- Delivers consistent fonts across the app.  
+
+## Notes:
+================================================================================
+
+  - Replace the default favicon when you add branding.
+  - Consider adding SEO/Open Graph meta later.
+  - If you add a strict CSP, ensure style-src/font-src for Google Fonts and avoid inline scripts (or use a nonce).
+ 

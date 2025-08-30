@@ -1,3 +1,5 @@
+/* Docs: see components/Toast.jsx.md */
+
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 

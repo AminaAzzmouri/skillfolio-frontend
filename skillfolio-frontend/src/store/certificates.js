@@ -1,4 +1,4 @@
-/* Docs: see docs/store/certificates.js.md */
+/* Documentation: see docs/store/certificates.js.md */
 
 import { api } from "../lib/api";
 

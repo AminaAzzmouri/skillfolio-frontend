@@ -1,94 +1,136 @@
 ## Purpose:
 ===============================================================================
 
-This page lets users **add and view certificates** (title, issuer, date earned, optional file).
-In the `feature/add-certificates` + `feature/certificates-polish` work, it talks to the **Django API** (`/api/certificates/`)
-instead of local mock state.
-Certificate cards now include inline file previews (image thumbnail or PDF object).
+The Certificates page lets learners search, filter, sort, paginate, add, edit, preview, and delete certificates. It also shows how many projects reference each certificate (per-card “Projects” count).
 
+## UI Structure:
 ===============================================================================
 
-## Structure:
+### Header
+    • Title + “← Back to dashboard”.certificates/`)  
+    • “Add Certificate” opens a modal with the create form.
+
+### ID chip (optional)
+    • If ?id=<pk> is present, show a chip with Clear filter.
+
+### Controls
+    • SearchBar – free text search over title/issuer.
+    • Filters – issuer + date_earned.
+    • SortSelect – date_earned/title asc/desc.
+
+### Grid
+    • Card per certificate (title/issuer/date, preview if file, project count, edit/delete).
+    • Edit swaps the card body for CertificateForm (inline).
+    • Delete uses ConfirmDialog.
+
+### Create Modal
+    • CertificateForm in create mode; closes on success.
+
+### Pagination
+    • Bottom pager (pageSize=10).
+
+## Routing & URL contract:
 ===============================================================================
 
-### State & Data (Zustand store):
+- Driven by useSearchParams:
 
-• `certificates` — array populated by `fetchCertificates()` (GET `/api/certificates/`)  
-• `certificatesLoading` — boolean while fetching  
-• `certificatesError` — string/null on fetch/post failures  
-• `fetchCertificates()` — GET `/api/certificates/`
-• `createCertificate({ title, issuer, date_earned, file })` — POST multipart to `/api/certificates/`
+    • search — text query.
+    • ordering — one of: "", "date_earned", "-date_earned", "title", "-title".
+    • issuer — filter.
+    • date_earned — filter (YYYY-MM-DD).
+    • id — optional, narrow to a specific PK (also shown as a chip).
 
-- Builds a `FormData` payload (fields: `title`, `issuer`, `date_earned`, optional `file_upload`)
-- Store prepends new items for snappy UX
+- Changing any control updates params and resets page to 1.
 
-### Hooks:
-
-• `useAppStore()` → read `certificates` and call `fetchCertificates()` / `createCertificate()`  
-• `useEffect` → call `fetchCertificates()` on mount so the list always shows server data  
-
-### Form:
-
-• Provided by `CertificateForm.jsx` child component (split out for clarity).  
-• Fields: Title, Issuer, Date Earned, optional File  
-• On submit:  
-  1. Build a `FormData` instance  
-  2. Call `createCertificate(form)` (store handles FormData + API)  
-  3. Reset inputs (file input fully resets via `ref`)  
-
-### Certificate List:
-
-• Renders `certificates` from the store (server data), newest first (sorted by date_earned desc).  
-• Each entry shows:  
-  - Title  
-  - Issuer + `date_earned`  
-  - File previews:
-       • Image → <img> thumbnail
-       • PDF → <object> preview, fallback “View file” link
-  - A small file link if `file_upload` is present (absolute URL built from API base if needed)
-• Certificates are listed first (newest → oldest), followed by a button to open/close the CertificateForm.
-
+## Backend Contract (Django DRF):
 ===============================================================================
 
-## States to handle:
+- Endpoints (owner-scoped by ViewSet)
+    • List / create: GET /api/certificates/, POST /api/certificates/
+    • Detail / update / delete: GET /api/certificates/{id}/, PATCH|PUT /api/certificates/{id}/, DELETE /api/certificates/{id}/
+
+- Server features from CertificateViewSet
+    • Filters: ?id=<pk>&issuer=<str>&date_earned=<YYYY-MM-DD>
+    • Search: ?search=<substring> over title, issuer
+    • Ordering: ?ordering=date_earned|-date_earned|title|-title (default -date_earned)
+    • Annotation: each row includes project_count (distinct) for FE display.
+    • Ownership: only records for request.user are returned; user is assigned on create.
+
+- Serializer validation
+    • date_earned cannot be in the future → 400 {"date_earned":["date_earned cannot be in the future."]}
+
+- Create / update payload (multipart if uploading a file)
+
+          {
+            "title": "Google Data Analytics",
+            "issuer": "Coursera",
+            "date_earned": "2025-02-01",
+            "file": "<PDF or image file> (optional)"
+          }
+
+- Response shape (subset)
+
+          {
+            "id": 17,
+            "title": "Google Data Analytics",
+            "issuer": "Coursera",
+            "date_earned": "2025-02-01",
+            "file_upload": "/media/certs/ga.pdf",
+            "project_count": 3,
+            "user": 5
+
+          }
+
+Note: If file_upload is a relative path, FE resolves it with makeFileUrl() using api.defaults.baseURL.
+
+## Data flow & store contract:
 ===============================================================================
 
-• **Loading** — “Loading certificates…” message  
-• **Empty** — “No certificates yet” message  
-• **Error** — surface `certificatesError` in red text  
+- Zustand useAppStore:
+  - State
+        • certificates, certificatesLoading, certificatesError
+        • certificatesMeta (expects count for pagination)
 
+  - Actions
+        • fetchCertificates({ search, ordering, filters, page })
+        • updateCertificate(id, patch) (omit file to keep existing upload)
+        • deleteCertificate(id)
+
+- Create happens inside CertificateForm via createCertificate(form).
+
+## Project counts shown on cards:
 ===============================================================================
 
-## Backend Contract (DRF):
+- Priority:
+        • If server provides project_count, use it.
+        • Else FE fetches /api/projects/?certificate=<id> and derives count from length/count/results.length. Results are cached per visible cert.
+
+Backend already annotates project_count, so you can later remove the FE fallback if you prefer.
+
+## File previews:
 ===============================================================================
 
-- `GET /api/certificates/` → list current user’s certificates  
-- `POST /api/certificates/` (multipart) fields:  
-  - `title` (string, required)  
-  - `issuer` (string, required)  
-  - `date_earned` (YYYY-MM-DD, required)  
-  - `file_upload` (file, optional)  
-- Requires header: `Authorization: Bearer <access_token>`
+- Images → inline <img> (via isImageUrl).
+- PDFs → <object type="application/pdf"> with fallback link (via isPdfUrl).
+- Others → link only.
 
+## States & UX:
 ===============================================================================
 
-## Role in Project:
+- Loading, error, and empty messages appear above the grid.
+- Edit mode uses in-card CertificateForm.
+- Delete uses ConfirmDialog.
+
+## Accessibility:
 ===============================================================================
 
-A core Skillfolio feature: tracking learning achievements with visual context (certificate previews). 
-Feeds the Dashboard’s stats and “recent certificates” list.
-
-===============================================================================
+- Labeled inputs, alt text on previews, keyboardable buttons/links.
 
 ## Future Enhancements:
 ===============================================================================
 
-- File preview/download with styled chip  
-- Edit/delete endpoints  
-- Filters (issuer, year)  
-- Drag-and-drop file upload, progress bar  
-- Optimistic updates with reconciliation
-
-
-New:
-accepts ?id=<pk> to filter list to a single certificate (used by Projects “View certificate” link).
+- Rely solely on project_count (drop FE fallback).
+- Skeleton loaders.
+- Drag & drop upload with progress.
+- Bulk actions.
+- Debounced search / prefetch next page.

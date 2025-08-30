@@ -1,45 +1,23 @@
-**App.jsx**:
+## Purpose:  ================================================================================
 
-  ## Purpose:
-  ================================================================================
+  Coordinates the **entire app shell**: renders the global `Navbar`, wires up **routing (React Router v6)**, and kicks off a **one-time session restore** so auth-gated routes behave correctly after refresh.
 
-  This is the **root component** of the Skillfolio frontend.  
-  It orchestrates the **overall navigation** of the application by combining the 
-  global Navbar and the React Router configuration.  
+## Key ideas:  ================================================================================
 
-  Essentially, App.jsx acts as the central “map” that connects each URL path 
-  to its corresponding page component.
+#### HomeGate: 
+  - a tiny gatekeeper for `/` that shows:
+    • `LandingPage` for guests
+    • `Home` for authenticated users
+  - • `null` while the app is **bootstrapping** (prevents flicker)
 
-  it runs a one-time **session restore** so the app knows whether a user is logged in
-  right after a page refresh.
+#### ProtectedRoute: 
+  wraps any route that requires authentication.
 
-  ================================================================================
+#### Session Restore:  
+`restoreUser()` runs on mount; it hydrates `{ user, access, refresh }` from `localStorage` and reapplies the JWT header.
 
-  ## Structure:
-  ================================================================================
-
-  #### Navbar:
-    • Always visible at the top of the app.  
-    • Provides navigation links: Home, Dashboard, Login, Register.
-
-  #### Routes:
-    • / → HomeGate (Landing for guests, Home for authed users).
-    • "/dashboard" → Dashboard (protected by `ProtectedRoute`).  
-    • "/login" → Login page (public).  
-    • "/register" → Register page (public).  
-    • "/certificates" → Certificates page (add/view certificates): protected.  
-    • "/projects" → Projects page (add/view projects): protected.
-    
-    HomeGate: LandingPage for guests, Home.jsx for authed users 
-    - New Home.jsx page is different from Dashboard.
-
-  #### ProtectedRoute:
-    • Wraps private pages (currently `/dashboard`) to ensure only authenticated users can access them.  
-    • Redirects unauthenticated users to the Login page.
-    • It also waits for the session to finish restoring before deciding (prevents “flash” redirects).
-
-  ## Session Restore (Bootstrapping):
-  ================================================================================
+## Structure
+================================================================================
 
   On mount, `App.jsx` calls `restoreUser()` from the global store:
   ```jsx
@@ -76,6 +54,7 @@
   - Auth-aware HomeGate implemented.
   - Protected routes working with ProtectedRoute.
   - Session restore wired in via Zustand store.
+  - Implemented a mobile hamburger menu in Navbar for smaller screens.
 
   ================================================================================
 
@@ -84,7 +63,6 @@
 
   - Add more protected routes (e.g., Profile, Goals).  
   - Improve layout by introducing a global wrapper (e.g., footer, theme toggle).  
-  - Implement a mobile hamburger menu in Navbar for smaller screens.  
   - Lazy-load heavy pages for faster first paint.
   - Route-level loading boundaries or skeletons.
   

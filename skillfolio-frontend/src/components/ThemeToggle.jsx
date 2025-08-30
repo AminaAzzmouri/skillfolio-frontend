@@ -1,3 +1,5 @@
+/* documentation: see docs/components/ThemeToggle.jsx.md */
+
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle({ className = "" }) {

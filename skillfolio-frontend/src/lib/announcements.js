@@ -1,4 +1,8 @@
+// Docs: see docs/announcements.md
+
 // Tiny fetch helper for /public/announcements.json
+
+
 export async function fetchAnnouncements() {
   const res = await fetch(`/announcements.json?ts=${Date.now()}`, { cache: "no-store" });
   if (!res.ok) throw new Error(`Failed to load announcements (${res.status})`);

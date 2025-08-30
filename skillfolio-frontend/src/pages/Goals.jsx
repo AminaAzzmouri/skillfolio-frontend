@@ -1,4 +1,4 @@
-/* Docs: see docs/pages/GoalsPage.md */
+/* Docs: see docs/pages/Goals.jsx.md */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";

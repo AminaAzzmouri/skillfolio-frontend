@@ -1,3 +1,5 @@
+/* Docs: see docs/store/goals.js.md */
+
 // Goals & GoalSteps API helpers
 
 import { api } from "../lib/api";

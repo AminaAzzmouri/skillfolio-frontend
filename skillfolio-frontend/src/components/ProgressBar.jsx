@@ -1,3 +1,5 @@
+// Docs: see docs/components/ProgressBar.jsx.md
+
 // Props: value (0..100), label? (string)
 export default function ProgressBar({ value = 0, label = "" }) {
   const pct = Math.max(0, Math.min(100, Number(value) || 0));

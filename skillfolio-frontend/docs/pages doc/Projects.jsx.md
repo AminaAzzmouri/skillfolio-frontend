@@ -1,89 +1,104 @@
 ## Purpose
 ===============================================================================
-This page lets users **create, list, edit, and delete projects** and optionally
-link each project to a certificate (by certificate ID). It uses the live API:
+Lets users create, list, edit, and delete projects, and (optionally) link a project to a certificate. 
+ 
+ Uses the live API:
 
   • GET /api/projects/           — list projects
   • POST /api/projects/          — create a project
   • PATCH /api/projects/{id}/    — update a project
   • DELETE /api/projects/{id}/   — delete a project
-  • GET /api/certificates/       — populate link dropdown
+  • GET /api/certificates/       — populate the “link to certificate” dropdown
 
-Auth is global (JWT). The axios helper injects `Authorization: Bearer <access>`.
-===============================================================================
+Auth is global (JWT); the axios instance injects Authorization: Bearer <access>.
+ Accepts both ?certificate=<id> and ?certificateId=<id> for filtering.
 
 ## Structure
 ===============================================================================
-### State (Zustand: useAppStore)
-Projects slice:
-  - projects / projectsLoading / projectsError
-  - fetchProjects()   → GET /api/projects/
-  - createProject(p)  → POST /api/projects/
-  - updateProject(id, patch) → PATCH /api/projects/:id/
-  - deleteProject(id) → DELETE /api/projects/:id/
 
-Certificates slice (for dropdown):
-  - certificates / certificatesLoading / certificatesError
-  - fetchCertificates() → GET /api/certificates/
+### URL/query params
+  - search: free text (title/description)
+  - ordering: date_created | -date_created | title | -title
+  - page: page number (int)
+  - certificate or certificateId: filter by linked certificate id
+  - status: planned | in_progress | completed
 
-### Local UI state:
-  - showCreate: toggle for create form
-  - editingId: which project is currently in edit mode
-  - confirmDeleteId: which project is pending deletion
-  - submitting / submitError: form submit states
+### Store (Zustand: useAppStore)
+  - Projects slice
+        • projects / projectsLoading / projectsError / projectsMeta
+        • fetchProjects({ search, ordering, filters, page })
+        • createProject(payload)
+        • updateProject(id, patch)
+        • deleteProject(id)
 
-### Certificate title mapping:
-  - useMemo to map certificate id → title so rows can display it
+  - Certificates slice (for dropdown + chip titles)
+        • certificates / certificatesLoading / certificatesError
+        • fetchCertificates()
+
+  - Local UI state
+        • showCreate — open/close create modal
+        • editingId — id of the row currently in edit mode
+        • confirmDeleteId — id pending deletion
+        • submitting / submitError — form submit states (shared by create/edit)
+
+  - Effects & helpers
+        • On mount: fetchCertificates() to populate dropdown.
+        • On param change: fetchProjects({ ... }).
+        • certTitleById (memo): maps certificate id → title for row display & chips.
+        • writeParams(patch): updates search/filters/order (resets page to 1).
+        • clearCertFilter(): removes both certificate and certificateId.
+
+## UI & Behavior
 ===============================================================================
 
-## Form & Submission
-===============================================================================
-Fields:
-  - title (required)
-  - status (planned | in_progress | completed)
-  - work_type (individual | team)
-  - duration_text (short string)
-  - primary_goal (practice_skill | deliver_feature | build_demo | solve_problem)
-  - challenges_short / skills_used / outcome_short / skills_to_improve
-  - certificateId (optional)
-  - description (auto-generated preview, editable)
+### Controls (top)
+  - <SearchBar /> — updates search
+  - <Filters type="projects" /> — writes { certificate, status }
+  - <SortSelect /> — writes ordering
+  - “Add Project” button — opens modal with <ProjectForm />
 
-Submit flow:
-  1) Live preview composed from guided fields; user can edit description
-  2) POST sends JSON with guided fields + final description
-  3) After success: page prepends new item
-  4) Edit uses inline <ProjectForm> with initial data, PATCH on save
-  5) Delete uses a confirm dialog
-===============================================================================
+### Grid (cards)
+  - View mode
+        • Title, description, status, created date.
+        • Bottom bar:
+            * If linked: Linked to: <Certificate Title> + link to /certificates?id=<id>
+            * Else: “Not linked”.
+        • “Edit” toggles inline <ProjectForm initial={p} …/>.
+        • “Delete” opens <ConfirmDialog/>.
 
-## UI States
-===============================================================================
-- Loading: “Loading projects…”
-- Error: concise message for both list and form
-- Empty: “No projects yet.”
-- Create form is toggled by a button; edit form is inline per row
-===============================================================================
+  - Edit mode
+        • Inline <ProjectForm initial={p} submitLabel="Save changes" onUpdate={...} />
+
+  - Modal (create)
+        • <Modal open={showCreate} title="Add Project">
+        • <ProjectForm onCreate={handleCreate} certificates={certificates} …/>
+
+  - States
+        • Loading: “Loading projects…”
+        • Error (list): “Error loading projects: …”
+        • Empty: “No projects yet.”
+        • Certificate list error (for dropdown) shown below the grid if present.
+
+  - Pagination
+        • <Pagination page pageSize=10 total={projectsMeta?.count} …/>
+        • Writes ?page= while preserving active query params.
 
 ## Role in Project
 ===============================================================================
-Projects demonstrate applying learning (certificates) to real work.
-Feeds dashboard stats; mirrors Certificates CRUD pattern for consistency.
+Projects showcase applied learning. This page mirrors Certificates CRUD for
+ consistency and powers dashboard counts and progress.
+
+## What's new:
 ===============================================================================
+
+- Certificate filter alias: accepts both ?certificate= and ?certificateId=.
+- Filter chip shows linked certificate title; clearing removes both keys.
+- Card bottom bar with clear link to the certificate detail filter.
+- Cleaned request/error handling for create/update flows.
 
 ## Future Enhancements
 ===============================================================================
-- Search, filters, ordering
-- Project detail page with richer rendering
-- Markdown description support, attachments/screenshots
-- Pagination and infinite scroll
-
-===============================================================================
-
-# What's new:
-
-   - Cards rendered in a responsive GRID (1 / 2 / 3 cols).
-   - Each card shows a bottom bar:
-       • If linked: "Linked to: <Certificate Title>" + "View certificate" link
-         that navigates to /certificates?id=<certificateId>.
-       • If not linked: "Not linked" (no link).
-   - Keeps existing filters/search/sort/pagination/editing.
+- Project detail route
+- Attachments/screenshots
+- Markdown preview for description
+- Infinite scroll option

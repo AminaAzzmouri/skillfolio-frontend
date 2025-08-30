@@ -1,4 +1,4 @@
-/* Docs: see docs/components/SortSelect.jsx.md */
+/* Documentation: see docs/components/SortSelect.jsx.md */
 
 /**
  * SortSelect

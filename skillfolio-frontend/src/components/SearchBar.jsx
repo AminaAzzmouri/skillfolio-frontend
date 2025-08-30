@@ -1,4 +1,4 @@
-/* Docs: see docs/components/SearchBar.jsx.md */
+/* Documentation: see docs/components/SearchBar.jsx.md */
 
 import { useEffect, useMemo, useState } from "react";
 

@@ -1,4 +1,4 @@
-/* Docs: see docs/components/ProtectedRoute.jsx.md */
+/* documentation: see docs/components/ProtectedRoute.jsx.md */
 
 import { Navigate } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore.js";

@@ -1,135 +1,79 @@
-  **Navbar.jsx**:
+## Purpose:
+================================================================================
 
-  ## Purpose:
-  ================================================================================
+  A persistent, auth-aware top navigation bar. It shows the brand, a Dashboard link, a theme toggle, and either Login/Register (guest) or the user email + Logout (authed). On mobile it presents a slide-in drawer.
 
-  The **Navbar** component provides a consistent, global navigation bar 
-  across the Skillfolio frontend. It allows users to move between 
-  major routes (Home, Dashboard, Login, Register) without reloading the page.  
+## What it renders:
+================================================================================
 
-  By keeping navigation centralized, the Navbar improves the 
-  **user experience (UX)** and establishes a clear layout 
-  pattern for authenticated and unauthenticated users.
-  
-  It provides quick links to key routes and reflects the current **auth state** 
-  (e.g., shows the user’s email + a Logout button when authenticated).
+  - Brand: Skillfolio (links to /).
+  - Desktop nav (≥ md):
+      • Links: Dashboard (/dashboard)
+      • <ThemeToggle />
+      • If authed: user email + Logout button
+        If guest: Login (/login) + Register (/register)
+- Mobile (＜ md):
+      • A hamburger opens a left drawer with:
+              > Same Dashboard link
+              > <ThemeToggle />
+              > Auth actions (email + Logout, or Login/Register)
 
-  ================================================================================
+## Key behaviors
+================================================================================
 
-  ## Structure:
-  ================================================================================
+  - Auth-aware: Reads user and logout from useAppStore.
+  - Mobile drawer lifecycle:
+    • Open via hamburger.
+    • Close on:
+        * Clicking the backdrop overlay
+        * Pressing Esc
+        * Route change (useLocation() watcher)
+        * Clicking the close “✕” button
+    • Animation: Drawer + overlay use framer-motion (AnimatePresence, motion) with spring transitions.
+    • Sticky header: position: sticky; top: 0; with blur and border.
 
-  #### Layout:
-      • Left: App name **Skillfolio**, styled as a brand identity.
-      • Right: Navigation links displayed in a horizontal row.
-      • Hidden links on mobile via `hidden md:flex` (only visible on `md+` screen sizes).
+## State & effects:
+================================================================================
 
-  #### Links (unauthenticated):
-      • Home → `/`
-      • Dashboard → `/dashboard` (works but typically redirects to login via `ProtectedRoute`)
-      • Login → `/login`
-      • Register → `/register`
+  - open (boolean) – drawer visibility.
+  - useEffect on location.pathname → closes the drawer when the route changes.
+  - useCallback + keydown Esc handler; added/removed only while drawer is open
 
-  ### Links/Actions (authenticated)
-      • Home → `/`
-      • Dashboard → `/dashboard`
-      • **User indicator**: shows the logged-in user’s email
-      • **Logout button**: clears tokens + state and returns to a public route
-      
-      • Guest → Login / Register.
-      • Authenticated → email + Logout button.
+## Accessibility:
+================================================================================
+
+  - Hamburger has aria-label="Open menu" and aria-expanded={open}.
+  - Drawer uses role="dialog" and aria-modal="true".
+  - Overlay click to dismiss.
+  - (Future nice-to-have) Focus management/trap in the drawer while open.
+
+## Styling:
+================================================================================
+
+  - Uses your Tailwind design tokens (bg-surface/95, border-border, bg-background/40, etc.).
+  - Desktop hides drawer with hidden md:flex; mobile shows hamburger with md:hidden.
+
+## Integration points:
+================================================================================
+
+  - Store: useAppStore((s) => s.user) and useAppStore((s) => s.logout).
+  - Routing: Link and useLocation from react-router-dom.
+  - Theme: <ThemeToggle /> is embedded in both desktop and mobile navs.
+  - Animation: framer-motion for overlay/panel enter/exit.
+
+## Edge cases handled:
+================================================================================
+
+  - Drawer cannot “stick” open after navigation (auto-closes on route change).
+  - No event-listener leak: keydown listener added only when open and removed on cleanup.
+  - Auth switch updates visible actions immediately (reads from store on render).
+
+## Future enhancements:
+================================================================================
+
+  - Active-link styles (e.g., highlight current route).
+  - Keyboard focus trapping inside the drawer; focus restore on close.
+  - Avatar/profile menu with more links (Profile, Goals, Certificates).
+  - Optional redirect after logout() (e.g., navigate("/")).
 
 
-  #### Styling:
-      • Dark background (`bg-background`) and light text (`text-text`) 
-        from Tailwind’s custom theme.
-      • Flexbox layout to distribute brand name and links  (`flex`, `justify-between`, `gap-4`)
-
-  #### Mobile Support:
-      • Currently hides navigation links on small screens (`hidden md:flex`).
-      • A hamburger menu placeholder (`...`) exists for a future responsive menu.
-
-  ================================================================================
-
-  ## Behavior & Data Flow:
-  ================================================================================
-
-  - Reads `user` from the global store (`useAppStore`) to decide which links to show.
-  - Calls `logout()` from the store to:
-    • clear `user`, `access`, and `refresh`
-    • remove localStorage session
-    • clear the axios Authorization header
-  - (Optional) You may use `useNavigate()` to redirect after logout if desired.
-  - Fix where Navbar was temporarily missing after login → now always renders on every route.
-
-  **Note:** Navbar shows Home link that resolves to Landing page for guests and Home page for authed users.
-
-  ### Minimal example (reference)
-    ```jsx
-      import { Link, useNavigate } from "react-router-dom";
-      import { useAppStore } from "../store/useAppStore";
-
-      export default function Navbar() {
-        const user = useAppStore((s) => s.user);
-        const logout = useAppStore((s) => s.logout);
-        const navigate = useNavigate();
-
-        const onLogout = () => {
-          logout();
-          navigate("/"); // optional: send user home
-        };
-
-        return (
-          <nav className="bg-background text-text p-4 flex justify-between items-center">
-            <Link to="/" className="font-heading text-xl">Skillfolio</Link>
-
-            <div className="hidden md:flex gap-4">
-              <Link to="/">Home</Link>
-              <Link to="/dashboard">Dashboard</Link>
-
-              {user ? (
-                <>
-                  <span className="opacity-80">{user.email}</span>
-                  <button onClick={onLogout} className="underline">Logout</button>
-                </>
-              ) : (
-                <>
-                  <Link to="/login">Login</Link>
-                  <Link to="/register">Register</Link>
-                </>
-              )}
-            </div>
-          </nav>
-        );
-      }
-
-  ================================================================================
-
-  ## Role in Project:
-  ================================================================================
-
-  - Provides **top-level navigation** so users can quickly switch 
-    between public pages (Landing, Login/Register) and private pages (Dashboard).
-  - Acts as a **persistent layout component** likely to appear 
-    across multiple routes.
-  - Communicates auth state at a glance (logged in vs. guest).
-  - Works hand-in-hand with ProtectedRoute and restoreUser() to keep UX consistent across refreshes.
-
-  ================================================================================
-
-  ## What's done so far:
-  ================================================================================
-
-  - Always renders on all routes.
-  - Logout triggers backend + frontend state clear
-  - Auth-aware links (switch between Login/Register and email/Logout).
-
-  ================================================================================
-
-  ## Future Enhancements:
-  ================================================================================
-
-  - Add a responsive hamburger menu with dropdown for small screens.
-  - Avatar dropdown with profile/goal links.
-  - Make Navbar sticky or transparent on scroll for better UX.
-  - Active link styles, keyboard focus improvements, and ARIA roles.

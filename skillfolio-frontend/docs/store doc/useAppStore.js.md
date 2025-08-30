@@ -1,243 +1,98 @@
 **useAppStore.js**:
 
-  ## Purpose:
-  =============================================================================================================
+## Purpose:
+=============================================================================================================
 
-  Centralized, lightweight global state for the Skillfolio frontend using Zustand.
+Centralized global state (Zustand) for auth (JWT) and CRUD over Certificates, Projects, and Goals, plus a bootstrapping flag so route guards can wait for session restore.
+
   
-  It manages:
+## What it stores
+=============================================================================================================
 
-    - Auth (JWT access/refresh, current user, restore on reload, logout),
-    - Axios auth header control via setAuthToken,
-    - Certificates integration (load list from live API, create with optional file upload).
-    - Projects (temporary local list): kept for UI demo; will be API-backed next
+- Auth: user, access, refresh, bootstrapped
+- Certificates: certificates, certificatesLoading, certificatesError, certificatesMeta: { count }
+- Projects: projects, projectsLoading, projectsError, projectsMeta: { count }
+- Goals: goals, goalsLoading, goalsError (meta optional later)
 
-  This keeps API interactions available to any component without prop drilling.
+## Actions (by slice)
+=================================================================================================================================================
 
-  =============================================================================================================
+### Auth:
 
-  ## Structure:
-  =================================================================================================================================================
+    • register({ email, password }) → POST /api/auth/register/register({ email, password }) → POST /api/auth/register/
+    Does not auto-login; caller should redirect to /login on success.
 
-  ### Data:
+    • login({ email, password }) → POST /api/auth/login/ with { username: email, password }
+    Saves { user, access, refresh } to store + localStorage, calls setAuthToken(access).
 
-    • certificates: [] — live list fetched from the backend
-    • projects: [] — local, temporary list (UI demo until projects API integration).
-    • addCertificate(payload): → Adds a new certificate with a generated ID (pushes { id, ...payload } using a robust 
-      ID generator (crypto.randomUUID when available, otherwise a random string))
-    • addProject(payload): Adds a new project with a unique ID and links optionally to a certificate.
-    • rid() — robust ID generator (prefers crypto.randomUUID, falls back to base-36 string)
+    • logout()
+      POST /api/auth/logout/ (best-effort), clears tokens, store, axios header, and localStorage.
 
-  ### Authentication:
+    • restoreUser()
+      Loads sf_user from localStorage, reapplies Authorization header if present, then sets bootstrapped = true in a finally block.
+
+### Certificates (LIVE API)
+
+    • fetchCertificates({ search, ordering, filters, page })
+      >  GET /api/certificates/ with query params.
+      > Accepts array or paginated { results, count }.
+
+    • createCertificate({ title, issuer, date_earned, file })
+      >  Multipart POST; prepends created row and bumps count optimistically.
+
+    • updateCertificate(id, patch)
+      >  PATCH; replaces the updated row in-place.
+
+    • deleteCertificate(id)
+      >  DELETE; removes the row and decrements count (never < 0).
   
-  1- State:
+### Projects (LIVE API)
 
-    • user: null by default; becomes `{ email }` when logged in or registered
-    • access: null → JWT access token (used for API calls).
-    • refresh: null → JWT refresh token (reserved for future token refresh flow).
-    • bootstrapped: false initially → flips to true after restoreUser() finishes so route guards can wait before redirecting.
-  
-  2- Actions:
+    • fetchProjects({ search, ordering, filters, page })
+      >  GET /api/projects/; handles array or paginated responses.
 
-    • async register({ email, password })
-      Calls POST /api/auth/register/.
-      **Intentional behavior:** does not auto-login. The UI should redirect the user to /login with a success message. 
-      Returns { created: true, email, meta }.
+    • createProject(payload)
+      >  POST; maps FE’s certificateId → BE’s certificate, prepends on success, bumps count.
 
-    • async login({ email, password })
-      Calls POST /api/auth/login/ with { username: email, password } (Django default user model expects username).
-      On success:
-          - Extracts { access, refresh }
-          - Sets Authorization header globally via setAuthToken(access) so all future api (axios) calls are authenticated
-          - Stores { user, access, refresh } in both Zustand and localStorage under sf_user
-    
-    • logout(): 
-      Calls POST /api/auth/logout/ then clears auth state in the store, and removes sf_user from localStorage.
+    • updateProject(id, patch)
+      >  PATCH; replaces the updated row in-place (also maps certificateId if present).
 
-    • restoreUser(): 
-          - Reads sf_user from localStorage at app start
-          - Restores { user, access, refresh } 
-          - Reapplies the axios header if an access token is present.
-          - Always sets bootstrapped: true in a finally block so components (e.g., ProtectedRoute) can safely wait for session restoration before deciding to redirect.
+    • deleteProject(id)
+      >  DELETE; removes row and decrements count.
 
-  ### Certificates (API) Actions:
+### Goals  (LIVE API)
 
-    • async fetchCertificates():
-          - GET /api/certificates/
-          - Populates certificates from server response.
-          - Handles both array response and paginated { results: [...] } gracefully.
+    • fetchGoals(params)
+      >  GET /api/goals/; handles array or paginated responses (meta optional).
 
-    • async createCertificate({ title, issuer, date_earned, file })
-          - POST /api/certificates/ (multipart)
-          - Builds a FormData payload:
-                  * title, issuer, date_earned (YYYY-MM-DD)
-                  * optional file_upload (PDF/image)
-          - On success, prepends the created item to certificates.
+    • createGoal({ title, target_projects, deadline, total_steps = 0, completed_steps = 0 })
+      >  POST; prepends created row.
 
-  ### Projects (API) Actions:
+    • updateGoal(id, patch) → PATCH
 
-    • projects: [] — list of projects from the backend  
-    • projectsLoading / projectsError — track fetch/post states
-    • async fetchProjects():
-          - GET `/api/projects/`
-          - Populates projects from server response (handles both array and paginated { results: [...] })
-    • async createProject({...}):
-          - POST /api/projects/ with guided fields in addition to title/description/certificate:
+    • deleteGoal(id) → DELETE
 
-            {
-            title,
-            description,              // final description (auto-generated but editable)
-            certificate: certificateId || null,
-            work_type,                // 'individual' | 'team' | null
-            duration_text,            // string | null
-            primary_goal,             // 'practice_skill' | 'deliver_feature' | 'build_demo' | 'solve_problem' | null
-            challenges_short,         // string | null
-            skills_used,              // string | null (CSV or short list)
-            outcome_short,            // string | null
-            skills_to_improve         // string | null
-            }
-            
-    • On success, prepends the new project into state for snappy UX.
-    • Errors are captured into `projectsError`.
-    • Payload now includes status (default "planned") along with guided fields.
-    • Remove mention of local demo adders as “temporary” → clarify both certificates & projects are now API-backed.
+### Error handling
 
-    **Note:** This replaces the earlier temporary `addProject` demo method with a full API-backed flow, aligning projects with certificates.
+    • Fetch actions normalize common axios errors into readable strings:
+      >  err.response.data.detail
+      > stringified err.response.data if it’s an object
+      > err.response.data or err.message
+      > final fallback labels: e.g., "Failed to fetch projects"
 
-  ### Axios integration:
-  
+### Bootstrapping flow (why it matters)
 
-    • api and setAuthToken come from src/lib/api.
-          - api is the preconfigured axios instance (baseURL, etc.).
-          - setAuthToken(tokenOrNull) sets or clears the default global Authorization: Bearer <token> header.
+    • restoreUser() must run once at app start.
+    • ProtectedRoute waits on bootstrapped to avoid flash redirects.
 
-  =================================================================================================================================================
+## Quick usage
+=================================================================================================================================================
 
-  ## How It’s Used in the App:
-  =========================================================================================================
+// App.jsx
+const restoreUser = useAppStore((s) => s.restoreUser);
+useEffect(() => { restoreUser(); }, [restoreUser]);
 
-  **Auth flow**:
-
-  - Register → register() → navigate to /login with success message
-  - Login → login() → navigate to /dashboard
-  - Logout → logout() → navigate to /login
-  - Navbar can show “Logout” and user email if user is set.
-  - Axios interceptor cleans up stale tokens → no more “network error when hot reload auto-logs you in”.
-
-  **Session persistence**:
-
-  - ProtectedRoute should read bootstrapped and user:
-          • If !bootstrapped → render a small loading placeholder.
-          • If bootstrapped && !user → redirect to /login.
-          • Otherwise → render children.
-
-  - On app load, call restoreUser() once (e.g., in App.jsx useEffect) to keep users signed in on refresh.
-  
-  **Certificates page**: 
-
-          • call fetchCertificates() on mount, 
-          • createCertificate() on submit.
-
-  =========================================================================================================
-  
-  ## Role in Project:
-  ================================================================================================
-
-  - Acts as the **single source of truth** for auth and certificate lists
-  - Abstracts away API logic from components (pages just call store actions).
-  - Ensures consistent session management and token handling across the app.
-
-  ================================================================================================
-
- ## What's done so far:
-  ================================================================================================
-
-  - Auth: register/login/logout/restoreUser with JWT and refresh storage.
-  - Certificates: live API integration, with file uploads and validation.
-  - Projects: live API integration, with guided fields and status.
-  - Bootstrapping flow → ensures no redirects before restoreUser runs.
-
-  ================================================================================================
-
-  ## Future Enhancements:
-  ============================================================================================
-
-  - Add update/delete for projects & certificates (CRUD).
-  - Token auto-refresh on expiry.
-  - Store slices (split auth/data) for maintainability.
-  - Derived selectors (dashboard counts, progress, etc.).
-
-  ================================================================================================
-
-  ## Quick Reference (Common Flows):
-  ==========================================================================================================
-
-  • Register → Login redirect: 
-                                await useAppStore.getState().register({ email, password });
-                                navigate("/login", { state: { msg: "Account created. Please log in." } });
-
-  • Login → Dashboard: 
-                                await useAppStore.getState().login({ email, password });
-                                navigate("/dashboard");
-
-  • Logout: 
-                                useAppStore.getState().logout();
-                                navigate("/login");
-
-  • Keep session on refresh: 
-                                // App.jsx
-                                const restoreUser = useAppStore((s) => s.restoreUser);
-                                useEffect(() => { restoreUser(); }, [restoreUser]).
-
-  • Certificates:
-                                // Load on page mount
-                                useEffect(() => { useAppStore.getState().fetchCertificates(); }, []);
-                                
-                                // Create with file
-                                await useAppStore.getState().createCertificate({ title, issuer, date_earned, file /* optional */ });
-
-  ================================================================================================
-
-  ## Troubleshooting:
-  ================================================================================================================================================
-
-  **After refresh I get redirected to /login**
-
-        • Ensure restoreUser() runs once on app boot (e.g., in App.jsx with useEffect).
-        • In ProtectedRoute, wait for bootstrapped === true before deciding to redirect. Render a small loading placeholder while !bootstrapped.
-
-  **401 Unauthorized after refresh**
-
-        • restoreUser() must reapply the axios Authorization header. Confirm setAuthToken(access) is called when an access token is restored.
-        • Check localStorage contains sf_user with { user, access, refresh }.
-
-  **Login returns “username is required”**
-
-        • For Django’s default User, the login payload must be { username: <email>, password }. Your store already maps this, but verify your login() sends username: email.
-
-  **Register succeeds but I’m not logged in**
-
-        • That’s intentional for now. register() does not auto-login; redirect your UI to /login with a success message.
-
-  **White screen / blank page after edits**
-
-        • Look at the browser console for syntax errors. Common culprits: a stray character, missing comma/semicolon, or accidentally pasting diff markers like +/-.
-        • If the error mentions a specific file/line, fix that first. Vite updates instantly after save.
-
-  **CORS errors in the browser**
-
-        • Backend must allow your frontend origin. In development, CORS_ALLOW_ALL_ORIGINS = True is fine; for production, add explicit origins.
-        
-  **Requests still unauthenticated even after login**
-
-        • Confirm setAuthToken(access) is called on successful login.
-        • Open DevTools → Network → your API request → Request Headers. You should see Authorization: Bearer <access>.
-
-  **State isn’t restoring on some browsers**
-
-        • Make sure localStorage writes aren’t blocked (Incognito/Private modes may restrict).
-        • Verify sf_user key exists in Application/Storage tab.
-
-  **TypeScript or ESLint warnings (if you add TS/strict rules later)**
-
-        • Add explicit return types to actions, or disable specific rules per file if needed. This repo is currently JS-first.
+// Certificates page
+const { fetchCertificates, createCertificate } = useAppStore.getState();
+await fetchCertificates({ search: "sql", ordering: "-date_earned" });
+await createCertificate({ title, issuer, date_earned, file });

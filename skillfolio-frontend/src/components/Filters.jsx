@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Filters.jsx.md */
+/* Documentation: see docs/components/Filters.jsx.md */
 
 /**
  * Filters

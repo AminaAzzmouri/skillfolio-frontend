@@ -1,3 +1,5 @@
+/* Docs: see components/Pagination.jsx.md */
+
 export default function Pagination({
   page = 1,
   pageSize = 10,

@@ -1,4 +1,4 @@
-/* Docs: see docs/components/Modal.jsx.md */
+/* Documentation: see docs/components/Modal.jsx.md */
 
 import { useEffect } from "react";
 

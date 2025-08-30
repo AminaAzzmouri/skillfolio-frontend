@@ -1,92 +1,90 @@
-**ProtectedRoute.jsx**:
+## purpose:
+================================================================================
 
-  ## purpose:
-  ================================================================================
+A minimal route guard that:
+    > Waits until the app has tried to restore a session (bootstrapped).
+    > Lets authenticated users through.
+    > Redirects unauthenticated users to /login.
 
-  The **ProtectedRoute** component is a simple **route guard**.  
-  Its job is to ensure that only authenticated users (those with a valid `user` 
-  state in the global store) can access certain routes — like the dashboard.  
+- This prevents a “flash” redirect during app start and keeps private routes private.
 
-  It also waits for the app to finish **restoring a session**
-  from localStorage (bootstrapping) before deciding whether to redirect or render.
+## Props:
+================================================================================
 
-  ================================================================================
+- children (ReactNode, required): The protected content to render after the checks pass.
 
-  ## How it Works:
-  ================================================================================
+- Note: The loading UI is currently baked in (“Loading…”). If you want a custom spinner, replace that JSX in the component.
 
-  - Reads two values from the global Zustand store:
-    • `user`: the current authenticated user (or `null` if logged out)
-    • `bootstrapped`: `true` after `restoreUser()` has run at least once on app load
-    
-  - **Bootstrapping guard:**  
-    • If `bootstrapped === false`, it renders a minimal “Loading…” screen.  
-    • This prevents a flash redirect to `/login` while the app is still restoring a session.
-  
-  - **Auth guard:**  
-    • Once bootstrapped, if `user` is missing → redirects to `/login` (`<Navigate replace />`).  
-    • If `user` exists → renders the protected `children`.
+## Data Sources (Zustand):
+================================================================================
 
+- Reads from useAppStore:
+    • user: The authenticated user object (or null).
+    • bootstrapped: true once restoreUser() has run at least once on app load.
 
-  #### Pseudocode:
-  ------------------------------------------------------------------------------
+## Behavior (Decision flow):
+================================================================================
 
-  if (!bootstrapped) {
-    render "Loading..." 
-    } 
-    else if (!user) {
-      redirect to /login 
-      } 
-      else {
-        render children
-        }
+- Bootstrapping
+If bootstrapped === false → render a minimal, full-height “Loading…” placeholder.
 
-  #### Example usage in `App.jsx`:
-  ------------------------------------------------------------------------------
-  import ProtectedRoute from "./components/ProtectedRoute";
+- Auth check
+If bootstrapped === true and user == null → <Navigate to="/login" replace />.
 
-  <Routes>
-    <Route path="/" element={<LandingPage />} />
-    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-  </Routes>
+- Pass through
+If bootstrapped === true and user exists → render children.
 
-  ------------------------------------------------------------------------------
+- Why replace? It avoids leaving a useless entry in history (Back won’t bounce the user back into the protected path).
 
-  ================================================================================
+## Usage
+================================================================================
 
-  ## Role in Project:
-  ================================================================================
+- Wrap a single routeimport ProtectedRoute from "../components/ProtectedRoute";
 
-  - Prevents unauthenticated users from directly accessing private pages 
-    via URL typing (e.g., `/dashboard`).
-  - Works hand-in-hand with:
-    • useAppStore.restoreUser() (sets bootstrapped when done)
-    • Navbar’s logout() (which clears auth state and token)
-  - Provides a clean UX with a tiny loading state during session restoration.
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-  ================================================================================
+- Nest under a layout
 
-  ## Notes & Extensibility:
-  ================================================================================
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/certificates" element={<CertificatesPage />} />
+          </Route>
 
-  - JWT awareness: The guard relies on user state (which is set after a successful JWT login).
-  - If you add token expiry checks later, you can verify/refresh tokens before rendering children.
-  - Role-based routing: You can extend the guard to check roles/permissions and redirect accordingly.
-  - Custom loading UI: Replace the inline “Loading…” div with a skeleton/spinner component if desired.
+## Integration Notes:
+================================================================================
 
-  ## What’s Done So Far:
-  ================================================================================
+- Ensure your store runs restoreUser() on app start and sets bootstrapped to true (even if no session is found).
+- Logout should clear user, tokens, and any persisted session. After logout, navigating to a protected route will redirect to /login.
 
-  - Bootstrapping guard in place.
-  - Simple "Loading…" fallback.
-  - Auth-only access to protected routes.
+## Edge Cases & Tips:
+================================================================================
 
-  ## Future Enhancements:
-  ================================================================================
+- Token expiry: If you later add token refresh, perform it before rendering children; if refresh fails, clear session and redirect.
+- Role/permission gating: You can extend the guard to accept required roles and redirect to /forbidden or a 403 page.
+- Loading UX: Swap the inline “Loading…” for your shared <Loading /> component to keep visuals consistent.
 
-  - Add role-based routing (e.g., admin vs user).
-  - Token freshness validation.
-  - Replace "Loading…" with skeleton loaders/spinners.
+## Testing Ideas (what to cover):
+================================================================================
+
+- Renders Loading… when bootstrapped is false.
+- Redirects to /login when bootstrapped === true and user == null.
+- Renders children when bootstrapped === true and user exists.
+- Uses replace so that Back doesn’t return to the protected route.
+
 
 
 

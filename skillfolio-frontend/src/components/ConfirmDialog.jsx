@@ -1,4 +1,4 @@
-// /* Docs: see docs/components/ConfirmDialog.jsx.md
+// /* Doc: see docs/components/ConfirmDialog.jsx.md
 
 /**
  * Minimal generic confirm dialog.

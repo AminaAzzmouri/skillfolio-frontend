@@ -1,3 +1,5 @@
+/* Docs: see docs/pages doc/Projects.jsx.md */
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";

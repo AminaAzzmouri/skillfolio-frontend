@@ -1,3 +1,5 @@
+/* Documentation: see docs/store doc/utils/date.js.md */
+
 // daysUntil("YYYY-MM-DD") -> integer (can be negative if past)
 
 export function daysUntil(dateString) {

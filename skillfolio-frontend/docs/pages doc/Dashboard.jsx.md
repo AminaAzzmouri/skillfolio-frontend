@@ -3,103 +3,142 @@
 ## Purpose:
 ===============================================================================
 
-This component serves as the **main authenticated area** of the Skillfolio app.
-Once logged in, users land here to view their overall progress and quickly
-navigate to certificates, projects, and profile-related features.
+The Dashboard is the main authenticated hub of Skillfolio.
 
-The dashboard **fetches certificates and projects on mount** and surfaces
-**loading / empty / error** states in the stats so the UI stays informative
-while data is loading.
+After login, users land here to see a snapshot of progress and jump to key areas.
+This screen:
 
-Recent certificates now render as cards with file thumbnails (image preview or PDF placeholder).
+      • Loads lists from the store (certificates, projects, goals).
+      • Loads analytics directly from API endpoints for overall stats.
+      • Shows loading / empty / error states clearly.
+      • Uses small animations (Framer Motion) for a pleasant feel.
 
-===============================================================================
+It now includes three stat cards (Total Certificates, Total Projects, Goal Progress) and three “Recent” panels (Certificates, Projects, Goals). Certificate cards render thumbnails (image or PDF placeholder).
 
 ## Structure:
 ===============================================================================
 
-Layout:
-  - **Sidebar (left side)**:
-      • Navigation links → Certificates, Projects, Profile (Profile is a placeholder for now).
-      • Visible on medium screens and above (hidden on small screens).
+- Layout:
+  - **Sidebar (left side, md+)**:
+      • Quick links: Certificates, Projects, Goals, Profile (placeholder).
+      • Hidden on small screens.
 
   - **Main content (right side)**:
-      • Welcome header
-      • **Statistics section**:
-          → Total Certificates (from API-backed store)
-          → Total Projects (from API-backed store)
-          → Goal progress (static placeholder for now)
-          → Each card can show loading/empty/error states depending on fetch status
-      • **Recent Certificates Panel**:
-          → Short list of the most 5 recently loaded certificates (from API-backed store).
-          → If empty, show an “empty” placeholder.
-          → Each rendered as a card:
-                 • Thumbnail (image / PDF / fallback “No file”)
-                 • Title, Issuer, Date
-                 • Link to file
-
-Styling:
-  - Tailwind custom theme (dark background, light text).
-  - Grid layout for statistics (responsive).
-  - Rounded cards with subtle background.
-
-===============================================================================
+      • Header: “Welcome to Your Dashboard”
+      • KPI cards (animated):
+          → Total Certificates (from /api/analytics/summary/)
+          → Total Projects (from /api/analytics/summary/)
+          → Goal Progress (avg from /api/analytics/goals-progress/)
+      • Recent panels
+          → Recent Certificates (first 5)
+          → Recent Projects (first 5)
+          → Recent Goals (first 5)
+- Styling & Motion:
+  - Tailwind theme tokens (dark background, light text).
+  - Card grid layouts with borders and rounded corners.
+  - Framer Motion variants:
+      • containerStagger (staggered children)
+      • itemFade (fade + lift-in)
 
 ## Data Flow & State:
 ===============================================================================
 
-- Uses the global store `useAppStore` (Zustand).
+- Store (Zustand): lists for “Recents”
 
-  Certificates:
-    - API-backed via `fetchCertificates()` (GET `/api/certificates/`)
-    - Create via `createCertificate()` (POST `/api/certificates/`, multipart)
-    - Exposed state: `certificates`, `certificatesLoading`, `certificatesError`
+  - useAppStore exposes:
+      • Certificates
+          → certificates, certificatesLoading, certificatesError
+          → fetchCertificates() → GET /api/certificates/
+      • Projects
+          → projects, projectsLoading, projectsError
+          → fetchProjects() → GET /api/projects/
+      • Goals
+          → goals, goalsLoading, goalsError
+          → fetchGoals() → GET /api/goals/
 
-  Projects:
-    - API-backed via `fetchProjects()` (GET `/api/projects/`)
-    - Create via `createProject()` (POST `/api/projects/`)
-    - Exposed state: `projects`, `projectsLoading`, `projectsError`
+- On mount, the Dashboard calls fetchCertificates, fetchProjects, and fetchGoals.
+ The “Recent” panels simply slice the first 5 items from each list.
 
-- **Dashboard behavior**:
-    - On mount, calls **both** `fetchCertificates()` and `fetchProjects()` so counts are always fresh.
-    - Counts:
-        → Total Certificates → `certificates.length` (from API once loaded)
-        → Total Projects → `projects.length` (from API once loaded)
-    - Recent Certificates reads from `certificates` once fetched; renders empty/placeholder when none.
+- Tip: If backend uses pagination, the store already normalizes responses like
+ Array.isArray(data) ? data : data?.results || [].
 
-Tip:
-  If you later enable server pagination, the store already normalizes list
-  responses using `Array.isArray(data) ? data : data.results || []`.
-
+## Direct API calls: analytics:
 ===============================================================================
 
-## Routing:
-===============================================================================
+- Summary (/api/analytics/summary/)
+  - Local state: summary, summaryLoading, summaryError
+  - Provides counts for certificates and projects.
 
-- Uses React Router’s `<Link>` for client-side navigation.
-  → “/certificates” → Certificates page
-  → “/projects”     → Projects page
-  → “/profile”      → reserved for future profile page
+- Goals progress (/api/analytics/goals-progress/)
+  - Local state: goalsProgress, goalsProgressLoading, goalsProgressError
+  - UI computes an average:
+      • Prefer steps_progress_percent; fallback to progress_percent.
 
-- The Dashboard route is wrapped by `<ProtectedRoute>`, so it only renders for authenticated users.
+- Toasts
+  - Local toasts array + <ToastContainer />.
+  - Analytics errors push a toast (pushToast("error", msg)).
+  - Users can dismiss toasts.
 
-===============================================================================
+ ## Preview Helpers:
+ ===============================================================================
+
+- isImageUrl(url): checks common image extensions.
+- isPdfUrl(url): checks .pdf.
+- makeFileUrl(maybeUrl): resolves relative file paths against api.defaults.baseURL.
+
+These utilities let certificate cards show:
+- An image thumbnail for image files,
+- A small “PDF preview” placeholder for PDFs,
+- “No file” otherwise.
+
+ ## Routing:
+ ===============================================================================
+
+- Uses <Link> for navigation:
+  - /certificates, /projects, /goals
+  - “Profile” is a placeholder for future route.
+
+- The Dashboard route itself is protected by <ProtectedRoute> (outside this file).
+
+ ## States & UI Behavior:
+ ===============================================================================
+
+- Loading: shows <Loading /> (with compact where appropriate).
+- Error: shows <EmptyState isError /> with the error message.
+- Empty: shows <EmptyState /> with helpful CTAs (e.g., “Add your first one”).
+- Animated appearance for cards and recent lists via Framer Motion.
 
 ## Role in Project:
 ===============================================================================
 
-The dashboard is the **central hub** for the user’s learning journey.
-It consolidates certificate tracking, project management, and (future) goal
-progress into one place. It also acts as the first screen where FE↔BE integration
-is visible, since totals and recent lists reflect the live backend.
+- The Dashboard is the single place where a learner sees:
+      • What they’ve archived (certificates),
+      • What they’re building (projects),
+      • How they’re progressing (goals)
 
-===============================================================================
+- It’s also the first point where full FE↔BE integration is visible:
+      • Store-backed lists for content,
+      • API-backed analytics for global stats,
+      • Clear UX for empty/loading/error.
 
 ## Future Enhancements:
 ===============================================================================
 
-- Add a “Recent Projects” panel (mirroring Recent Certificates).
-- Add lightweight skeleton loaders for the stat cards.
-- Make the sidebar collapsible on mobile (hamburger) or introduce a layout shell.
-- Compute and visualize goal progress (e.g., projects completed vs. target).
-- Link items to detail pages (certificate/project detail routes).
+- Sidebar collapse on mobile (or a shared layout shell with a hamburger).
+- Skeleton loaders for KPI cards and recent lists.
+- “View all” routes for richer list pages (already linked).
+- Per-item actions in recent (e.g., quick edit/delete).
+- More analytics: streaks, time-to-goal, category breakdowns.
+- Deep links from KPI cards to filtered views.
+
+## Key Dependencies:
+===============================================================================
+
+- Zustand for global state (lists + loading/error flags).
+- Axios instance (api) for analytics endpoints.
+- Framer Motion for micro-animations.
+- Custom components: ProgressBar, Loading, EmptyState, ToastContainer.
+
+
+
+

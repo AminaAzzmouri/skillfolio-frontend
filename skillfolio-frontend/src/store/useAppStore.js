@@ -1,4 +1,4 @@
-/* Docs: see docs/store/useAppStore.js.md */
+/* Documentation: see docs/store/useAppStore.js.md */
 
 // Zustand store: JWT auth + certificates (API) + projects (API) + goals (API) + bootstrapping.
 

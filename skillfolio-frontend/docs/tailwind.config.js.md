@@ -1,52 +1,64 @@
 **tailwind.config.js**:
 
-  ## Purpose:
-  ================================================================================
+## Purpose:
+================================================================================
 
-  This is the **configuration file** for Tailwind CSS in the Skillfolio frontend.  
-  It defines which files Tailwind should scan for class names, and it extends 
-  the default theme with custom colors and fonts to establish a consistent design system.
+Central Tailwind configuration for Skillfolio. It:
+  - Enables **class-based dark mode**.
+  - Scans your source for class names.
+  - Extends the theme with **design tokens** (colors + fonts) that are powered by **CSS variables** at runtime.
 
-  ================================================================================
+## Highlights:
+================================================================================
 
-  ## Structure:
-  ================================================================================
+- **darkMode: "class"** — dark theme turns on when `<html class="dark">` is present.
+- **Variable-driven colors** — every color uses `rgb(var(--color-*) / <alpha-value>)`.
+    * This lets you switch themes instantly by changing CSS variables (see `index.css`).
+-**Fonts** — `heading` uses *Roboto Mono*, `body` uses *Roboto*.
 
-  #### content:
-    • Lists all files where Tailwind should look for utility classes.
-    • Includes index.html and all JS/TS/JSX/TSX files under src/.
+## Config Shape:  ================================================================================
 
-  #### theme.extend:
-    • Custom colors:
-      • primary    → "#0EA5E9" (Sky Blue)
-      • secondary  → "#22C55E" (Green)
-      • background → "#0F172A" (Deep Navy)
-      • text       → "#F1F5F9" (Light Gray)
-      • accent     → "#EAB308" (Yellow)
-    • Custom fonts:
-      • heading → Roboto Mono (monospace fallback)
-      • body    → Roboto (sans-serif fallback)
+export default {
+  darkMode: "class",
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        background: "rgb(var(--color-background) / <alpha-value>)",
+        surface:    "rgb(var(--color-surface) / <alpha-value>)",
+        text:       "rgb(var(--color-text) / <alpha-value>)",
+        muted:      "rgb(var(--color-muted) / <alpha-value>)",
+        border:     "rgb(var(--color-border) / <alpha-value>)",
 
-  #### plugins:
-    • Currently empty.
-    • Can be extended with Tailwind plugins (e.g., typography, forms, animations).
+        primary:    "rgb(var(--color-primary) / <alpha-value>)",
+        secondary:  "rgb(var(--color-secondary) / <alpha-value>)",
+        accent:     "rgb(var(--color-accent) / <alpha-value>)",
+      },
+      fontFamily: {
+        heading: ['"Roboto Mono"', "monospace"],
+        body: ["Roboto", "sans-serif"],
+      },
+    },
+  },
+  plugins: [],
+};
 
-  ================================================================================
+## How it works with CSS Variables:
+================================================================================
 
-  ## Role in Project:
-  ================================================================================
+- See index.css for the actual values of --color-* in light (:root) and dark (.dark) themes.
+- Because colors are RGB triplets, you can use Tailwind opacity utilities naturally:
+    * bg-primary/20, text-text/80, border-border/50, etc.
 
-  - Provides the **design tokens** (colors, typography) used consistently across 
-    all components and pages.
-  - Enables Skillfolio’s unique visual identity while still leveraging 
-    Tailwind’s utility-first workflow.
-  - Ensures dark, sleek theme matches the app’s branding.
+## Usage Examples:
+================================================================================
 
-  ================================================================================
+    <div class="bg-background text-text">
+      <button class="bg-primary hover:bg-primary/80 text-white rounded px-4 py-2">Primary</button>
+    </div>
 
-  ## Future Enhancements:
-  ================================================================================
+## Tips:
+================================================================================
 
-  - Add responsive breakpoints or container widths if custom sizing is needed.
-  - Extend Tailwind with plugins like @tailwindcss/forms for styled forms.
-  - Add custom spacing, shadows, or animations for richer UI polish.
+- Add plugins (forms/typography) by filling the plugins array later.
+- If you add new tokens, declare both the Tailwind color key here and the CSS variable in index.css.

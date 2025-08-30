@@ -1,71 +1,100 @@
-**Login.jsx**:
+**Register.jsx**:
 
   ## Purpose:
   ================================================================================
 
-  This component provides the **login interface** for Skillfolio.  
-  It allows users to authenticate by submitting their **email + password**.  
-  On success, the app stores JWT tokens and redirects the user to their dashboard. 
-
-  ================================================================================
-
-  ## Structure:
-  ================================================================================
-
-  #### State:
-      • form: Holds the email + password values.
-      • error: Stores user-visible validation or login errors.
+  Provides the login interface for Skillfolio. Users authenticate with email + password; on success we call the store’s login action and redirect to /dashboard.
   
-  #### Hooks:
-      • useAppStore: Accesses the global Zustand store for the `login` action, which:
-        - Sends POST to `/api/auth/login/` (with `{ username: email, password }`)
-        - Stores returned `access` + `refresh` JWT tokens
-        - Persists session to localStorage
+  The actual API call lives inside useAppStore().login. This page is UI + control flow only.
 
-      • useNavigate: From React Router, used to redirect users to `/dashboard` after success.
-
-  #### Form:
-      • Input fields for email + password (required)
-      • Validation: Requires both fields to be filled.
-      • On submit:
-        1. Calls `await login({ email, password })`  
-        2. On success → navigate to `/dashboard`  
-        3. On error → display error message under the form  
-
-  #### Error Handling:
-      • Surfaces API errors when available:
-        - `err.response.data` (string or object)  
-        - Fallbacks: `err.message` or `"Login failed"
-
-  #### Routing:
-      • Success → `/dashboard`  
-      • Provides a link to `/register` if the user doesn’t yet have an account  
-
-
+  ## Component signature:
   ================================================================================
 
-  ## Role in Project:
+  export default function Login() : JSX.Element
+
+  ## State & hooks:
   ================================================================================
 
-  Login is part of the **authentication flow**:
-    - Completes the second half of the **auth flow** (login after registration).  
-    - Verifies credentials directly against the backend.  
-    - On success, initializes the app’s authenticated state and unlocks protected routes.
+  - Local state
+      • form – { email: string, password: string }
+      • error: string for user-visible errors
+  - Store
+      • login – from useAppStore, performs the authentication (e.g., POST /api/auth/login/)
 
+  - Routing
+      • useNavigate – navigate to /dashboard after successful login
+
+  ## UI / UX:
   ================================================================================
 
-  ## Current Integration Notes:
+  - Two labeled inputs:
+      • Email (type="email", required)
+      • Password (type="password", required)
+  - Submit button: “Log In”
+  - Inline error surface under the form (text-accent) when login fails
+  - Footer link to Register (/register)
+  - Styling uses Tailwind tokens from your theme:
+      • Background: bg-background
+      • Text: text-text
+      • Primary button: bg-primary hover:bg-primary/80
+      • Inputs: bg-background/60 border border-gray-700
+
+  ## Submit flow:
   ================================================================================
-
-  - Uses real backend API: `/api/auth/login/`  
-  - Persists `{ user, access, refresh }` in both Zustand state and localStorage  
-  - Restored automatically on page reload (`restoreUser()` in store)  
-
-  ## Future Enhancements:
-  ================================================================================
-
   
-  - Add loading state on submit (spinner or disabled button).
-  - Add "Forgot Password?" link + recovery flow.
-  - Stronger validation (regex for email, minimum password length). 
-  - Optional toast/banner for login errors instead of inline text.  
+  - onSubmit prevents default and clears prior error.
+  - Calls await login(form) (delegates to the store for API + session handling).
+  - On success → navigate("/dashboard").
+  - On failure → builds a helpful error string using:
+        • err.response.data.detail
+        • or stringified err.response.data
+        • or err.message
+        • fallback: "Login failed"
+
+  - This mirrors the code:
+
+        const detail = err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ?? err?.message ?? "Login failed";
+
+  ## Error handling:
+  ================================================================================
+  
+  - Shows a single, concise error message below the inputs.
+  - Preserves server detail when possible (useful for validation or 401s).
+
+  ## Accessibility notes:
+  ================================================================================
+  
+  - Inputs have visible <label> elements.
+  - Form is keyboard-friendly; no custom key handling required.readers to announce it.
+  - Sufficient color contrast comes from your dark palette; if you later tune light mode, keep contrast ≥ WCAG AA.
+
+  ## Integration notes:
+  ================================================================================
+  
+  - Expects useAppStore().login to:
+      • Talk to the backend (e.g., POST /api/auth/login/).
+      • Store user/session (tokens) in state (and optionally localStorage).
+      • Throw on failure so this page can render the error.
+  - Redirect target: /dashboard.
+  - Login page can read location.state.msg to show a success banner/toast.
+
+  If your Register page navigates to /login with a success banner in location state, this component currently does not read it. You can optionally read const { state } = useLocation() and display state?.msg in a non-error banner.
+
+  ## Future enhancements:
+  ================================================================================
+  
+  - Disabled state / spinner while awaiting response.
+  - “Forgot password?” link → recovery flow.
+  - Client-side email format hint.
+  - Toasts instead of inline error.
+  - Show a friendly success banner if location.state?.msg is present (from Register).
+
+  ## What’s out of scope here:
+  ================================================================================
+  
+  - No direct API code—handled by the store.
+  - No token storage logic—also handled by the store.
+  - No auto-redirect if already authenticated—handled globally (e.g., via restoreUser() + route guards).
+
+

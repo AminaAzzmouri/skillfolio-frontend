@@ -1,393 +1,234 @@
 # Skillfolio Frontend
 
-This is the frontend of **Skillfolio**, a web application that helps self-learners archive their certificates, track skills, and connect achievements to projects.  
+Skillfolio helps self-learners archive certificates, document projects, and hit goals—so progress is visible, connected, and shareable.
 
-Built with **React + Tailwind CSS**, the frontend provides a responsive, modern, and user-friendly interface for learners.
-
----
-
-## 🚀 Features (Planned)
-
-- Landing page (Skillfolio intro + call-to-action)
-- User authentication (login, register, logout) ✅ wired to backend
-- Dashboard with live stats (certificates & projects) ✅
-- Certificates: list + add with file upload ✅ live API (polished UX)
-- Projects:
-            * list + add with optional certificate link ✅
-            * guided questions + live auto-generated description preview ✅
-- Responsive design (desktop + mobile)
+  - Frontend: React (Vite) · Zustand · Tailwind CSS · Axios
+  - Backend: Django + DRF (JWT auth)
+  - Data sources: Live API + a small local JSON “feed” for public announcements
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Overview
 
-- React (with Vite)
-- Tailwind CSS
-- Zustand (state management)
-- Axios (API requests → Django backend)
-
----
-
-## 📅 Project Timeline
-
-- Week 3: Project setup + basic layout (Landing + Auth pages)
-- Week 4: Backend integration for auth (JWT) + Certificates API (GET/POST with file upload) + Projects API (GET/POST with certificate links)
-- Week 5: Styling, polish, integration with backend data (goals, profile) + Projects guided questions UI & live auto-description preview
+- Auth with JWT (register, login, logout, session restore)
+- Private routes guarded by ProtectedRoute
+- Certificates: create (multipart upload), list, map to projects
+- Projects: create, list, link to certificates, guided fields + live auto-description
+- Goals: create, steps/checklist per goal, progress via completed steps and/or completed projects, days-left nudges, local step reordering with persistence
+- Home (for authed users): motivation, rotating “Did you know?” facts, and an Announcements section backed by a small local JSON feed (with “Save as Goal” one-click)
+- Dashboard: live stats (certs/projects), recent items
+- Shared UI: Navbar (desktop + mobile drawer), Modal, ConfirmDialog, ProgressBar, Pagination, SearchBar, Filters, SortSelect, ThemeToggle, Toasts
+- Docs everywhere (/docs/*) so contributors know how each piece works
 
 ---
 
-## ⚡ Getting Started
+🧭 Architecture & Repo Map
 
-==============================================================================
-# Clone repo
-git clone https://github.com/AminaAzzmouri/skillfolio-frontend.git
+src/
+  components/
+    forms/ (CertificateForm, ProjectForm, GoalForm)
+    Modal, ConfirmDialog, ProgressBar, Pagination,
+    SearchBar, Filters, SortSelect, ThemeToggle, ToastContainer, Navbar
+  pages/
+    LandingPage, Home, Dashboard, Certificates, Projects, Goals
+  sections/
+    AnnouncementsSection (cards + filters)
+  store/ (useAppStore + API slices: certificates, projects, goals)
+  lib/
+    api.js (axios instance + auth header + 401 interceptor)
+    announcements.js (fetch from /public/announcements.json)
+  styles/
+    index.css (theme tokens & base styles)
+  App.jsx (routing + HomeGate + guards)
+public/
+  announcements.json (static feed for enrollments & deals)
+tailwind.config.js (colors via CSS vars, dark mode = class)
 
-# Create project (If you didn’t scaffold with Vite already)
-npm create vite@latest skillfolio-frontend
+- Auth flow: Zustand keeps { user, access, refresh }, writes to localStorage, and re-applies the Authorization header on reload via restoreUser().
 
-# Navigate into project folder
-cd skillfolio-frontend
-
-# Install dependencies
-npm install
-
-# Install tailwindcss postcss autoprefixer (if not present yet)
-npm install -D tailwindcss@3 postcss autoprefixer
-
-# Initialize
-npx tailwindcss init -p
-
-# Configure API base URL (create .env.local)
-
-# Vite reads variables prefixed with VITE_
-echo "VITE_API_BASE=http://127.0.0.1:8000" > .env.local
-(If you change this later, restart `npm run dev` so Vite picks it up.)
-
-# Run development server
-npm run dev
-
-# Install react-router-dom
-npm install react-router-dom
-
-# Install Zustand for state management
-npm install zustand
-
-# Install Axios for API requests
-npm install axios
-==============================================================================
-
-📌 **Quick sanity test: guided questions + auto-description**  
-
-Create a project (leave description empty; fill guided answers). The preview
-textarea will auto-fill; you can still edit. On submit, backend stores both
-the guided answers and final description.
-
-Payload includes:
-{ title, description, certificate, work_type, duration_text, primary_goal,
-  challenges_short, skills_used, outcome_short, skills_to_improve }
-
-==============================================================================
-
-📌 **Backend setup required**  
-
-Make sure the Django backend is running at `http://127.0.0.1:8000` with these endpoints available:  
-
-- `POST /api/auth/register/`  
-- `POST /api/auth/login/`  (expects { username: <email>, password })
-- `GET /api/certificates/`  
-- `POST /api/certificates/` (multipart; field name: file_upload)
-- `GET /api/projects/`
-- `POST /api/projects/`
-
-If your backend base URL isn’t http://127.0.0.1:8000, set it in .env.local via VITE_API_BASE.
+- API base URL: VITE_API_BASE (set in .env.local) + axios api instance + a global 401 interceptor that clears stale tokens and bounces to /login.
 
 ---
 
-## 📅 Documentation
+✅ What’s Done (from the start → now)
 
-- /docs//components/* - [UI components & pages]
-- /docs//state - [Global State (Zustand)
+- Foundations & First Screens
+  - Project setup: Vite + Tailwind + folder structure; pushed chore/react-setup
+  - Routing & Navbar: react-router-dom, global <Navbar />, routes for /, /dashboard, /login, /register
+  - Landing Page: hero + CTAs; dark, responsive theme
+  - Dashboard skeleton: sidebar layout, placeholder stats & recent certificates
+  - State (Zustand): mock auth + mock data actions; localStorage persistence
+  - ProtectedRoute: private access to /dashboard
+  - Branch hygiene: one feature per branch; frequent rebases; README notes-
 
----
+- Live Auth & API-backed Data
+  - JWT auth: register/login/logout wired to DRF; restoreUser() on boot with bootstrapped flag
+  - Navbar: Login/Register vs email + Logout, dynamic by auth state
+  - Certificates (live): GET/POST (multipart), loading/error/empty states, dashboard count, recent list
+  - Projects (live): GET/POST (link to cert), loading/error/empty states, dashboard counters
+  - Infrastructure: .env.local with VITE_API_BASE, axios instance, 401 interceptor
 
-## Branches Strategy:
-
-- **chore/react-setup**:
-
-  - Purpose: Scaffold the React app and styling foundation.
-
-  - Current Status:
-
-    - Project bootstrapped with Vite
-    - Tailwind CSS + PostCSS + Autoprefixer configured
-    - Custom theme tokens (primary, secondary, background, text, accent) + fonts (Roboto / Roboto Mono) in tailwind.config.js
-    - Dev server runs with npm run dev
-
-  - Key files: `tailwind.config.js`, `postcss.config.js`, `index.html`
-
-  - Next Steps: Keep this branch limited to tooling/config changes only (future chores go to new chore/\* branches).
-
----
-
-- **feature/routing-and-navbar**:
-
-  - Purpose: Introduce client-side routing and a global, reusable navigation bar.
-
-  - Current Status:
-
-    - Installed react-router-dom
-    - Wrapped app with <BrowserRouter> in src/main.jsx
-    - Added routes for /, /dashboard, /login, /register in src/App.jsx
-    - Created src/components/Navbar.jsx with links (Home, Dashboard, Login, Register)
-    - Scaffolded placeholder pages in src/pages (LandingPage, Dashboard, Login, Register)
-
-  - Key files: `src/main.jsx`, `src/App.jsx`, `src/components/Navbar.jsx`, `src/pages/*`
-
-  - Next Steps: Add mobile hamburger nav later in a small feature/navbar-mobile branch (optional)
+- Goals, UX polish, and rich list tooling
+  - **Goals page:** create/update/delete goals, steps per goal (add, rename, toggle done, reorder with persisted order), progress bars, deadline countdown, “nudge” when close
+  - **Reusable primitives:** ProgressBar, Pagination (Prev/Next), SearchBar (debounced), Filters (per type), SortSelect, Modal, ConfirmDialog, ToastContainer, Loading, EmptyState
+  - Projects page upgrades: responsive card grid; filters/search/sort/pagination; “linked certificate” chip with deep link; guided fields → live auto-description (still editable)
+  ( )
+  - Certificates page polish: consistent states; ready for edit/delete (store & page support added)
+  - Home (authed): motivation blocks + AnnouncementsSection (local JSON feed of enrollments/deals) with filters & search; Save as Goal prefilled modal using GoalForm’s initialDraft
+  - Theme: CSS-variable based design tokens with dark/light toggle; theme applied early in index.html to avoid FOUC
+  - Docs: component/page/store docs added or refreshed for easier onboarding
 
 ---
 
-- **feature/landing-page**:
-  
-  - Purpose: Build the landing page with hero section and CTAs (Sign Up / Log In).
+##  🔭 What’s Next
 
-  - Current Status:
+### Short term:
+- Certificates/Projects edit & delete UI (store methods already in)
+- “Recent Projects” on Dashboard; richer certificate/project detail pages
+- Markdown support for project descriptions; chips for skills lists
 
-    - Created `LandingPage.jsx` under `src/pages/`
-    - Integrated `Navbar` at the top of the page
-    - Added hero section with:
-      - App name: **Skillfolio**
-      - Tagline: “Store your learning journey in one place.”
-      - Two CTA buttons: **Sign Up** → `/register`, **Log In** → `/login`
-    - Applied Tailwind styling for a dark-sleek vibe (using custom theme colors + fonts)
-    - Fully responsive (mobile-first design with centered layout)
+### Mid term
+- JWT refresh flow; role/permission hooks for routes
+- Backend feed for announcements (replace /public/announcements.json)
+- Analytics endpoints for richer dashboard (+ goal streaks)
 
-  - Key files: `src/pages/LandingPage.jsx`
-
-  - Next Steps:
-
-    - Polish responsiveness further with optional animations
+### Nice-to-have
+- Attachments/screenshots on projects; image/PDF previews
+- Confetti/special animations on milestones; more personalization
+- Pagination controls with direct page numbers (1…N)
 
 ---
 
-- **feature/dashboard-skeleton**:
+## 📦 Announcements feed (why it exists & how it works)
 
-  - Purpose: Provide a base layout for the user dashboard with sidebar navigation and placeholder content.
+While the backend API for public promotions/enrollments is being scoped, we ship a tiny static feed:
+  - File: public/announcements.json
+  - Fetcher: src/lib/announcements.js (no-store fetch, small normalization)
+  - UI: src/sections/AnnouncementsSection.jsx + src/components/AnnouncementCard.jsx
+  - Integration: Appears on Home for signed-in users with filters (platform/type) and search; each item has “Visit” + “Save as Goal”
 
-  - Current Status:
+> Why: lets the UX ship immediately (browse, filter, and convert announcements to goals) without waiting on a backend table.
 
-    - Created `Dashboard.jsx` under `src/pages/`
-    - Implemented responsive layout with **Tailwind CSS**:
-      - **Sidebar** (desktop view): links for Certificates, Projects, Profile
-      - **Main Content** area with:
-        - Welcome heading
-        - Three placeholder stat cards: Total Certificates, Total Projects, Goal Progress
-        - Total Certificates now reflects live backend data (via store)
-        - Recent Certificates list pulls from store (backed by API load)
-    - Styled using the dark-sleek theme tokens (background, text, etc.)
-    - Responsive design → Sidebar hidden on small screens, content remains accessible
-    - Connected dashboard stats to backend API
+> Upgrade path: later replace the fetcher with a backend endpoint (e.g., /api/announcements/) or a small service app, add caching/ETag support, and enrich with authenticated personalization (e.g., show deals matching a user’s certificates/skills).
 
-  - Key files: src/pages/Dashboard.jsx
+## 🧪 Testing
 
-  - Next Steps:
-    - Add a collapsible mobile sidebar (later branch: `feature/dashboard-mobile`)
-    - Feed stats dynamically from backend.  
+- Scope covered (unit/integration via React Testing Library):
+  * Pages: Certificates, Projects, Goals (list states, CRUD handlers, filters/sort/pagination behaviors)
+  * Forms: CertificateForm, ProjectForm (guided fields & description preview), GoalForm (create & edit, initialDraft)
+  * Components: Pagination, ProgressBar, ConfirmDialog, Navbar (auth states), etc.
 
----
+- Run tests: npm test
+(If you’re using Vitest: npx vitest; with Jest: npm test—both work with RTL.)
 
-- **feature/dashboard-polish**
+## 🧰 Setup (clone & run locally)
 
-  - Purpose: Pull fresh data on load and surface states for a smooth UX.
+### Prereqs
+- Node 18+ and npm
+- Python 3.10+ for the backend (Django + DRF)
+- A running backend (dev): http://127.0.0.1:8000
 
-  - Current Status:
-    - ✅ Dashboard calls `fetchCertificates()` and `fetchProjects()` on mount
-    - ✅ Stats show loading/error/empty states
-    - ✅ “Recent Certificates” lists latest items from API
+1) Clone & install
 
-  - Key files:
-    - `src/pages/Dashboard.jsx`
+          git clone https://github.com/AminaAzzmouri/skillfolio-frontend.git
+          cd skillfolio-frontend
+          npm install
 
-  - Next Steps:
-    - Add a collapsible mobile sidebar (`feature/dashboard-mobile`)
-    - Add “Recent Projects” panel fed by API
+2) Env config
 
----
+          Create .env.local in the project root:
+          VITE_API_BASE=http://127.0.0.1:8000
 
-- **feature/auth-pages**:
+Restart the dev server if you change it later.
 
-  - Purpose: Implement Login & Register pages with styled forms connected to backend authentication (Django JWT)
+3) Run frontend
 
-  - Current Status: 
-    - Register form sends POST request to `/api/auth/register/` (backend Django endpoint).
-    - Login form sends POST request to `/api/auth/login/` and stores issued JWT tokens (access & refresh).
-    - Session is persisted via `localStorage` → users remain logged in after page refresh.
-    - Logout clears tokens and resets app state.
-    - Added <ProtectedRoute> so pages like /dashboard are only accessible when authenticated.
-    - Navbar now dynamically updates to show Login/Register when logged out, and Logout + email when logged in
+          npm run dev
 
-  - Key files: 
-    - `src/pages/Login.jsx` 
-    - `src/pages/Register.jsx`
-    - `src/components/ProtectedRoute.jsx`
-    - `src/components/Navbar.jsx`
-    - `src/store/useAppStore.js` (Zustand auth logic)
-    - `src/lib/api.js`
+4) Backend quickstart (high level)
 
-  - Next Steps: 
-    - Handle API error messages more gracefully in UI.
+  - Create and activate a Python venv
+  - Install backend requirements
+  - Add the frontend origin to CORS allowed origins
+  - Run migrations & start the server
+  - Confirm endpoints:
+        * POST /api/auth/register/
+        * POST /api/auth/login/ (expects { username: <email>, password })
+        * GET/POST /api/certificates/ (POST is multipart, field file_upload)
+        * GET/POST /api/projects/
+        * GET/POST/PATCH/DELETE /api/goals/
+        * GET/POST/PATCH/DELETE /api/goalsteps/
 
----
+5) Optional sample data
+Edit public/announcements.json to try the announcements flow quickly.
 
-- **feature/state-management**:
+## 🚢 Deployment
 
-  - Purpose: Global state store using Zustand.
+- Frontend:
+      - Build: npm run build → static assets in dist/
+      - Host on Netlify/Vercel/static host
+      - Set environment variable VITE_API_BASE=https://<your-backend-domain>
+      - Ensure dark mode class toggling script stays in index.html head
 
-  - Current Status: 
-    - Auth state (user, tokens, session persistence via `restoreUser()){}`.
-    - Certificates/projects slices added  
-    - Local addProject still available for now (will be swapped with API calls).
-    - Bootstrapping mechanism ensures guards wait
-  
-  - Key files: `src/store/useAppStore.js`
-  
-  - Next Steps: 
-    - Add projects API (GET/POST), then edit/delete
+- Backend:
+      - Configure allowed origins (CORS) to include your deployed FE domain
+      - Serve over HTTPS
+      - Ensure JWT endpoints and file uploads are accessible from FE
+      - Set correct file/media static hosting if you serve uploaded files
 
----
+- Common gotchas:
+      - 401s after deploy → check that FE VITE_API_BASE matches the deployed BE; verify CORS and HTTPS
+      - File uploads blocked → confirm content types and media storage configuration
 
-- **feature/add-certificates**:
+## 🔌 API Quick Reference (used by FE)
 
-  - Purpose: Add certificates via API (title, issuer, date, file).
+### Auth:
+    - POST /api/auth/register/
+    - POST /api/auth/login/ → { access, refresh }
+    - POST /api/auth/logout/ → { refresh } (best-effort blacklist)
 
-  - Current Status:
-    - ✅ Certificates list loads from GET `/api/certificates/`
-    - ✅ Add Certificate form (split into `CertificateForm`) sends POST multipart `/api/certificates/`
-    - ✅ Store handles FormData creation + prepends new items
-    - ✅ Loading/error/empty states integrated
-    - ✅ Dashboard pulls live certificate count
-    - ✅ Certificates and Dashboard now render inline previews of uploaded files
-            • Image → thumbnail preview
-            • PDF → embedded preview or link
+### Certificates:
+    - GET /api/certificates/
+    - POST /api/certificates/ (multipart: title, issuer, date_earned, file_upload)
+    - PATCH /api/certificates/:id/
+    - DELETE /api/certificates/:id/
 
-  - Key files:
-    - `src/pages/Certificates.jsx`
-    - `src/components/forms/CertificateForm.jsx`
-    - `src/pages/Dashboard.jsx`
-    - `src/store/useAppStore.js` (fetchCertificates/createCertificate) 
+### Projects:
+    - GET /api/projects/?search=&ordering=&certificate=&status=&page=
+    - POST /api/projects/ (FE sends certificateId, mapped to certificate)
+    - PATCH /api/projects/:id/ (maps certificateId → certificate)
+    - DELETE /api/projects/:id/
 
-  - Next Steps:
-    - Add certificate detail, edit/delete endpoints
-    - Better styled previews (chips / modals)
+### Goals & Steps:
+    - GET/POST/PATCH/DELETE /api/goals/
+    - GET /api/goalsteps/?goal=<id>
+    - POST /api/goalsteps/ (goal, title, is_done, order)
+    - PATCH /api/goalsteps/:id/
+    - DELETE /api/goalsteps/:id/
 
----
+## 🗂 Past Branches & Purpose (kept for history)chore/react-setup — Vite, Tailwind, tokens, fonts
 
-- **feature/certificates-polish**
+- feature/routing-and-navbar — Router + global Navbar
+- feature/landing-page — hero + CTAs
+- feature/dashboard-skeleton — layout + placeholders
+- feature/auth-pages — login/register + ProtectedRoute
+- feature/state-management — Zustand store (auth & mock data → later API)
+- feature/add-certificates / feature/certificates-polish — live API + UX
+- feature/add-project / feature/projects-polish — live API + guided fields
+- feature/guided-questions — live auto-description for projects
+- feature/dashboard-polish — stats wired, states surfaced
 
-  - Purpose: Improve Certificates page with better UX and polish.
+(Later work folded in main: Goals, steps, filters/sort/pagination, announcements feed, mobile drawer, docs)
 
-  - Current Status:
-    - ✅ Calls `fetchCertificates()` on mount
-    - ✅ Shows loading, error, and empty states
-    - ✅ Form split into `CertificateForm` component
-    - ✅ Submit button disables while posting
-    - ✅ File input resets correctly after upload
-    - ✅ Links to uploaded files (absolute URLs supported)
+## 📝 Changelog Highlights
 
-  - Key files:
-    - `src/pages/Certificates.jsx`
-    - `src/components/forms/CertificateForm.jsx`
+- Week 1: Scaffolding, routing, Navbar, Landing, Dashboard skeleton, mock state, ProtectedRoute
 
-  - Next Steps:
-    - Add edit/delete flows
-    - File preview chip with styled UI
+- Week 2: JWT auth; restore session; Certificates & Projects live API; dashboard data; .env and axios refactor
 
----
+- Later: Goals & steps with reordering; Projects & Certificates polish; Home with Announcements feed; shared UI primitives; dark/light theme with CSS vars; broad documentation across pages/components/store
 
-- **feature/add-project**
+## 🙌 Credits & License
 
-  - Purpose: Let users capture projects and optionally link them to certificates.
-
-  - Current Status:
-    - ✅ Project list loads from GET `/api/projects/`
-    - ✅ Add Project sends POST `/api/projects/` with:
-      { title, description, certificate: <id | null> }
-    - ✅ Certificate dropdown is populated from live API
-    - ✅ Loading/error states integrated
-    - ✅ Guided questions form & auto-generated description (now supported)
-
-  - Key files:
-    - `src/pages/Projects.jsx`
-    - `src/store/useAppStore.js` (fetchProjects/createProjects)
-
-  - Next Steps:
-     - Add project edit/delete in UI
-     - Show “recent projects” on Dashboard
-
----
-
-- **feature/projects-polish**  
-
-  - ✅ Calls `fetchCertificates()` + `fetchProjects()` on mount  
-  - ✅ Submit button disables while posting  
-  - ✅ Shows loading, error, and empty states for both projects and certificates  
-  - ✅ Inline error surfaced if creation fails 
-  - Auto-description preview integrated with guided fields (work_type, duration, primary_goal, etc.)
-
----
-
-- **feature/guided-questions**:
-
-  - Purpose: Replace free-form project description with a guided form
-    (short answers + dropdowns) and live auto-generated description preview.
-
-  - Current Status:
-    - ✅ Projects page updated with guided inputs:
-      Work type, Duration, Primary goal, Challenges, Skills/Tools,
-      Outcome, Skills to practice.
-    - ✅ Live preview composes a polished description (still editable before submit).
-    - ✅ Store updated to post guided fields to backend
-      (backend also auto-generates if `description` is blank).
-
-  - Key files:
-    - `src/pages/Projects.jsx`
-    - `src/store/useAppStore.js`
-
-  - Next Steps:
-    - Add edit/delete flows
-    - Chips UI for short comma-separated fields
-    - Dashboard “Recent Projects” fed by API
-
----
-
-- **feature/auth-home-page**:
-
-  - **Purpose:** Provide a welcoming, motivational **Home** page exclusively for authenticated users, separate from the public Landing page.
-
-  - **Current Status:**
-    - ✅ Added `src/pages/Home.jsx` with a **typing animation** message (no embedded links).
-    - ✅ Introduced **protected** route `/home` in `App.jsx`.
-    - ✅ Updated `Navbar.jsx` to route **Home** to `/home` when authenticated and `/` when logged out.
-    - ✅ Added docs: `docs/components/Home.jsx.md`, and updated Navbar/App docs accordingly.
-
-  - **Key files:**
-    - `src/pages/Home.jsx`
-    - `src/App.jsx` (new `/home` route)
-    - `src/components/Navbar.jsx` (conditional Home link)
-    - `docs/components/Home.jsx.md`
-
-  - **Next Steps:**
-    - Personalize the Home message (e.g., greet by user email/name).
-    - Optional background animation / confetti for milestones.
-
----
-
-- **feature/documentation**:
-
-  - Purpose: keep README + docs in sync with implemented features
-
-  - Key files (planned): 
-    - `README.md`
-    - `skillfolio-frontend/*`
-    - `skillfolio-frontend/docs/components/*`
-    - `skillfolio-frontend/state`
+- Built by Amina Azzmouri
+- Frontend uses open-source libraries (React, Vite, Tailwind, Zustand, Axios, RTL)
