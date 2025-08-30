@@ -329,7 +329,7 @@ export default function ProjectForm({
       <div className="flex items-center gap-2">
         <button
           disabled={submitting || !form.title.trim()}
-          className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition disabled:opacity-60"
+          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition disabled:opacity-60"
         >
           {submitting ? "Saving…" : submitLabel}
         </button>
@@ -355,3 +355,5 @@ export default function ProjectForm({
     </form>
   );
 }
+
+

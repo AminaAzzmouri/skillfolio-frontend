@@ -77,13 +77,6 @@ export default function CertificatesPage() {
     fetchCertificates({ search, ordering, filters, page });
   }, [fetchCertificates, search, ordering, page, filters.issuer, filters.date_earned, filters.id]);
 
-  // Scroll when opening the form (kept; modal also captures attention)
-  useEffect(() => {
-    if (showForm && formRef.current) {
-      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [showForm]);
-
   // Helper to write params (and reset page)
   const writeParams = (patch) => {
     const next = new URLSearchParams(sp);
@@ -119,7 +112,7 @@ export default function CertificatesPage() {
         if (!cancelled) {
           setCountsByCertId((prev) => ({ ...prev, [certId]: count }));
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setCountErrors((prev) => ({ ...prev, [certId]: true }));
         }
@@ -155,9 +148,21 @@ export default function CertificatesPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="font-heading text-2xl">Certificates</h1>
-        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
+        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">
+          ← Back to dashboard
+        </Link>
+      </div>
+
+      {/* Add button directly under the back link */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowForm(true)}
+          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
+        >
+          Add Certificate
+        </button>
       </div>
 
       {/* Active id filter chip (appears only when ?id= is present) */}
@@ -320,22 +325,13 @@ export default function CertificatesPage() {
         })}
       </div>
 
-      {/* Toggle button */}
-      <div className="max-w-xl">
-        <button
-          onClick={() => setShowForm(true)}
-          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
-        >
-          Add Certificate
-        </button>
-      </div>
-
       {/* Create Form in Modal */}
       <Modal open={showForm} onClose={() => setShowForm(false)} title="Add Certificate">
-        <div ref={formRef}>
+        <div ref={formRef} className="max-w-2xl">
           <CertificateForm
             submitLabel="Add Certificate"
             onCancel={() => setShowForm(false)}
+            onSuccess={() => setShowForm(false)}   // auto-close after successful create
           />
         </div>
       </Modal>
@@ -366,3 +362,5 @@ export default function CertificatesPage() {
     </div>
   );
 }
+
+

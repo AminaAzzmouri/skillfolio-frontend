@@ -355,6 +355,7 @@ export default function GoalsPage() {
                             className="rounded bg-secondary/70 px-3 py-2 text-sm hover:bg-secondary/90 transition"
                             onClick={() => {
                               const t = stepInputs[g.id] || "";
+                              onStepInputChange[g.id] = "";
                               onStepInputChange(g.id, "");
                               addStep(g.id, t);
                             }}
@@ -481,25 +482,23 @@ export default function GoalsPage() {
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2">
         <h1 className="font-heading text-2xl">Goals</h1>
         <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
       </div>
 
-      {goalsError && <div className="text-accent mb-3">Error: {goalsError}</div>}
-
-      {/* Toggle create */}
-      <div className="max-w-xl mb-4">
+      {/* Add button directly under the back link */}
+      <div className="mb-4">
         <button
           type="button"
           onClick={() => setShowCreate(true)}
-          className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition"
+          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
         >
           Add Goal
         </button>
       </div>
 
-      {/* Create in Modal */}
+      {/* Create in Modal (scrollable) */}
       <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Goal">
         <div ref={formRef}>
           <GoalForm

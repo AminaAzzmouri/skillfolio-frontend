@@ -162,6 +162,16 @@ export default function ProjectsPage() {
         <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
       </div>
 
+      {/* Add button directly under the back link */}
+      <div className="mb-4">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="bg-primary rounded p-3 font-semibold hover:bg-primary/80 transition"
+        >
+          Add Project
+        </button>
+      </div>
+
       {/* Active certificate filter chip (if any) */}
       {effectiveCertificate && (
         <div className="mb-3 text-sm">
@@ -287,17 +297,8 @@ export default function ProjectsPage() {
 
       {certificatesError && <div className="text-accent mb-4">Certificates error: {certificatesError}</div>}
 
-      <div className="max-w-xl">
-        <button
-          onClick={() => setShowCreate(true)}
-          className="bg-secondary rounded p-3 font-semibold hover:bg-secondary/80 transition"
-        >
-          Add Project
-        </button>
-      </div>
-
-      {/* Create in Modal */}
-      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Project">
+      {/* Create in Modal (scrollable) */}
+      <Modal open={showCreate} onClose={() => setShowCreate(false)} title="Add Project" maxWidth="max-w-3xl">
         <div ref={formRef}>
           <ProjectForm
             certificates={certificates}
@@ -335,3 +336,5 @@ export default function ProjectsPage() {
     </div>
   );
 }
+
+

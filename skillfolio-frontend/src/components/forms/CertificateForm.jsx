@@ -11,12 +11,14 @@ import { useAppStore } from "../../store/useAppStore";
  *   onSubmit: async (form) => void   // parent handles updateCertificate(...)
  *   submitLabel: string              // e.g., "Save changes"
  * - Optional onCancel for modal usage
+ * - Optional onSuccess() callback after a successful submit (create or edit)
  */
 export default function CertificateForm({
   initial = null,
   onSubmit = null,
   submitLabel = "Add Certificate",
   onCancel = null,
+  onSuccess = null,
 }) {
   const createCertificate = useAppStore((s) => s.createCertificate);
 
@@ -69,12 +71,13 @@ export default function CertificateForm({
     setSubmitting(true);
     try {
       if (onSubmit) {
-        await onSubmit(form); // edit mode
+        await onSubmit(form); // edit mode (parent will handle update)
       } else {
         await createCertificate(form); // create mode
         // Reset after creating
         handleReset();
       }
+      onSuccess?.(); // notify parent (e.g., close modal)
     } catch (err) {
       const msg =
         err?.response?.data?.detail ??
@@ -173,3 +176,5 @@ export default function CertificateForm({
     </form>
   );
 }
+
+
