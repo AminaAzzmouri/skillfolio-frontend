@@ -244,7 +244,7 @@ export const useAppStore = create((set, get) => ({
   async login({ email, password }) {
     if (!email || !password) throw new Error("Missing credentials");
     const { data } = await api.post("/api/auth/login/", {
-      email,
+      username: email,
       password,
     });
     const { access, refresh } = data;
