@@ -104,7 +104,7 @@ export default function AnnouncementsSection({ onSaveGoal }) {
       {loading && <div className="opacity-80">Loading announcements…</div>}
       {err && <div className="text-accent">Error: {err}</div>}
       {!loading && !err && filtered.length === 0 && (
-        <div className="opacity-80">No announcements match your filters.</div>
+        <div className="opacity-80">No announcements  right now. Try the platform finder below to search live course platforms.</div>
       )}
 
 

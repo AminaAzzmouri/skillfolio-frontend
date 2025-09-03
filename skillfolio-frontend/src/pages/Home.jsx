@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { motion } from "framer-motion";
-import AnnouncementsSection from "../sections/AnnouncementsSection";
+import AnnouncementsSection from "../sections/AnnouncementsSection"
+import PlatformDiscoverySection from "../sections/PlatformDiscoverySection";
 import Modal from "../components/Modal";
 import GoalForm from "../components/forms/GoalForm";
 import { fetchRandomFact } from "../lib/facts";
@@ -76,6 +77,7 @@ export default function Home() {
       {/* ANNOUNCEMENTS */}
       <div className="mt-8">
         <AnnouncementsSection onSaveGoal={onSaveGoalRequest} />
+        <PlatformDiscoverySection />
         {/* Save as Goal Modal */}
         <Modal open={showGoal} onClose={() => setShowGoal(false)} title="Save as Goal">
           <GoalForm
