@@ -247,16 +247,16 @@ export const useAppStore = create((set, get) => ({
     const ident = (identifier ?? email ?? "").trim();
     if (!ident || !password) throw new Error("Missing credentials");
 
-    // Send both keys so BE can authenticate by email OR username.
+    // Canonical login contract: 2 fields only (email_or_username + password)
+    // Backend returns{ access, refresh, username, email } to populate navbar immediately
     const { data } = await api.post("/api/auth/login/", {
-      username: ident,
-      email: ident,
+      email_or_username: ident,
       password,
     });
     const { access, refresh } = data;
 
-    // Keep the same shape as before; store whatever the user typed.
-    const user = { email: ident };
+    // Persist actual user identity from backend so Navbar can show username
+    const user = { username: data?.username || "",email: data?.email || ident };
     setAuthToken(access);
     set({ user, access, refresh });
     localStorage.setItem("sf_user", JSON.stringify({ user, access, refresh }));
