@@ -1,8 +1,15 @@
-export async function fetchAnnouncements() {
-  const res = await fetch(`/announcements.json?ts=${Date.now()}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load announcements (${res.status})`);
-  const raw = await res.json();
-  const items = Array.isArray(raw) ? raw : raw?.results || [];
+// Live Announcements API (DRF)
+import { api } from "./api";
+
+/**
+ * fetchAnnouncements
+ * Accepts optional params like { limit, platform, type, search }
+ * Returns an array; supports both list and paginated DRF response shapes.
+ */
+
+export async function fetchAnnouncements(params = {}) {
+  const { data } = await api.get("/api/announcements/", { params });
+  const items = Array.isArray(data) ? data : data?.results || [];
   return items.map((x) => ({
     ...x,
     starts_at: x.starts_at || null,
