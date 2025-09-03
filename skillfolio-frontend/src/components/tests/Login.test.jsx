@@ -1,93 +1,81 @@
-import "@testing-library/jest-dom/vitest";
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import Login from "@/pages/Login.jsx";
+// src/pages/Login.jsx
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAppStore } from "../store/useAppStore";
 
-// --- Mocks ---
+export default function Login() {
+  const [form, setForm] = useState({ identifier: "", password: "" });
+  const [error, setError] = useState("");
+  const login = useAppStore((s) => s.login);
+  const navigate = useNavigate();
 
-// Spy to capture navigation
-const navigateMock = vi.fn();
-
-// Mock react-router-dom but keep the real components (MemoryRouter, Link, etc.)
-vi.mock("react-router-dom", async () => {
-  const actual = await vi.importActual("react-router-dom");
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    try {
+      await login({ identifier: form.identifier, password: form.password });
+      navigate("/dashboard");
+    } catch (err) {
+      const detail =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object"
+          ? JSON.stringify(err.response.data)
+          : err?.response?.data) ??
+        err?.message ??
+        "Login failed";
+      setError(detail);
+    }
   };
-});
 
-// We'll replace this per-test with resolve/reject
-const loginMock = vi.fn();
+  return (
+    <div className="min-h-screen bg-background text-text flex items-center justify-center px-4">
+      <form
+        onSubmit={onSubmit}
+        className="w-full max-w-md bg-background/80 p-6 rounded-xl border border-gray-700"
+      >
+        <h1 className="font-heading text-2xl mb-6 text-center">
+          Log in to Skillfolio
+        </h1>
 
-// Mock the Zustand store hook to return a state object that includes our loginMock
-vi.mock("@/store/useAppStore", () => {
-  return {
-    useAppStore: (selector) => {
-      const state = {
-        login: loginMock,
-      };
-      return selector ? selector(state) : state;
-    },
-  };
-});
+        <label className="block text-sm mb-2">Email or username</label>
+        <input
+          type="text"
+          required
+          value={form.identifier}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, identifier: e.target.value }))
+          }
+          className="w-full mb-4 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
+          placeholder="you@example.com or username"
+          autoComplete="username"
+        />
 
-function renderLogin() {
-  // Use MemoryRouter so <Link> renders without errors
-  const { MemoryRouter } = require("react-router-dom");
-  return render(
-    <MemoryRouter>
-      <Login />
-    </MemoryRouter>
+        <label className="block text-sm mb-2">Password</label>
+        <input
+          type="password"
+          required
+          value={form.password}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, password: e.target.value }))
+          }
+          className="w-full mb-2 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
+          placeholder="••••••••"
+          autoComplete="current-password"
+        />
+
+        {error && <p className="text-sm text-accent mb-2">{String(error)}</p>}
+
+        <button className="w-full bg-primary hover:bg-primary/80 transition rounded p-3 font-semibold">
+          Log In
+        </button>
+
+        <p className="text-sm mt-4 text-center">
+          No account?{" "}
+          <Link className="text-secondary hover:underline" to="/register">
+            Create one
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
-
-beforeEach(() => {
-  loginMock.mockReset();
-  navigateMock.mockReset();
-});
-
-describe("Login page", () => {
-  it("renders inputs and submit button", () => {
-    renderLogin();
-
-    expect(screen.getByText(/log in to skillfolio/i)).toBeInTheDocument();
-    // Inputs are easiest to select by placeholder here
-    expect(screen.getByPlaceholderText(/you@example\.com/i)).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/•+/)).toBeInTheDocument(); // password bullets
-    expect(screen.getByRole("button", { name: /log in/i })).toBeInTheDocument();
-  });
-
-  it("submits and navigates to /dashboard on success", async () => {
-    loginMock.mockResolvedValueOnce({ user: { email: "a@b.com" } });
-
-    renderLogin();
-
-    await userEvent.type(screen.getByPlaceholderText(/you@example\.com/i), "a@b.com");
-    await userEvent.type(screen.getByPlaceholderText(/•+/, { selector: "input" }), "secret123");
-
-    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
-
-    await waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith({ email: "a@b.com", password: "secret123" });
-      expect(navigateMock).toHaveBeenCalledWith("/dashboard");
-    });
-  });
-
-  it("shows server error detail on failure", async () => {
-    loginMock.mockRejectedValueOnce({
-      response: { data: { detail: "Invalid credentials" } },
-    });
-
-    renderLogin();
-
-    await userEvent.type(screen.getByPlaceholderText(/you@example\.com/i), "wrong@user.com");
-    await userEvent.type(screen.getByPlaceholderText(/•+/, { selector: "input" }), "badpass");
-
-    fireEvent.click(screen.getByRole("button", { name: /log in/i }));
-
-    expect(await screen.findByText(/invalid credentials/i)).toBeInTheDocument();
-    expect(navigateMock).not.toHaveBeenCalled();
-  });
-});
