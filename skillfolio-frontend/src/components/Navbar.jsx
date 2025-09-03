@@ -49,7 +49,9 @@ export default function Navbar() {
 
           {user ? (
             <>
-              <span className="text-sm opacity-70 ml-2">{user.email}</span>
+              <span className="text-sm opacity-70 ml-2">
+                {user.username || (user.email ? user.email.split("@")[0]:"")}
+              </span>
               <button
                 className="btn btn-outline ml-1"
                 onClick={logout}
@@ -130,7 +132,9 @@ export default function Navbar() {
 
                 {user ? (
                   <>
-                    <div className="text-sm opacity-70 truncate">{user.email}</div>
+                    <div className="text-sm opacity-70 truncate">
+                      {user.username || (user.email ? user.email.split("@")[0]: "")}
+                    </div>
                     <button
                       className="btn btn-outline text-left"
                       onClick={logout}
