@@ -36,6 +36,7 @@ export default function Home() {
   // --- Save as Goal modal state ---
   const [showGoal, setShowGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState(null);
+  const [justCreated, setJustCreated] = useState(null);
   const onSaveGoalRequest = (item) => {
     // Works for both announcements and platforms
     const title =
@@ -52,8 +53,9 @@ export default function Home() {
     setShowGoal(true);
   };
   const handleCreateGoal = async (payload) => {
-    await createGoal(payload);
+    const created = await createGoal(payload);  // returns created goal
     setShowGoal(false);
+    setJustCreated(created); // { id, title, ... }
   };
 
   return (
@@ -94,6 +96,27 @@ export default function Home() {
             onCancel={() => setShowGoal(false)}
           />
         </Modal>
+        {justCreated && (
+          <div className="fixed bottom-6 right-6 z-[70] w-[320px] rounded-lg border border-gray-700/60 bg-background/95 shadow-lg p-4">
+            <div className="font-semibold">Saved to Goals</div>
+            <div className="text-sm opacity-80 truncate">“{justCreated.title}”</div>
+            <div className="mt-3 flex gap-2">
+              <Link
+                 className="px-3 py-1.5 rounded bg-primary hover:bg-primary/80 text-sm"
+                 to={`/goals?focus=${justCreated.id}`}
+                 onClick={() => setJustCreated(null)}
+              >
+                See it
+              </Link>
+              <button
+                className="px-3 py-1.5 rounded border border-gray-700 hover:bg-white/5 text-sm"
+                onClick={() => setJustCreated(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+         )}
       </div>
       
       {/* DID YOU KNOW — footer/right, well-separated from announcements */}

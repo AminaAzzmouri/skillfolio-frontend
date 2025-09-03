@@ -1,7 +1,7 @@
 /* Docs: see docs/pages/Goals.jsx.md */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 import { createGoalStep, updateGoalStep, deleteGoalStep } from "../store/goals";
 import { daysUntil } from "../store/utils/date";
@@ -51,6 +51,7 @@ function Section({
   submitting,
   submitError,
   handleUpdate,
+  highlightId,
 }) {
   return (
     <section className="mb-8">
@@ -69,7 +70,13 @@ function Section({
             const showNudge = (g.daysLeft ?? 0) <= 3;
 
             return (
-              <li key={g.id} className="p-3 rounded border border-gray-700 bg-background/70">
+              <li
+                key={g.id}
+                id={`goal-${g.id}`}
+                className={`p-3 rounded border border-gray-700 bg-background/70 ${
+                  String(highlightId) === String(g.id) ? "ring-2 ring-secondary animate-pulse" : ""
+                }`}
+              >
                 {!isEditing ? (
                   <>
                     {/* header */}
@@ -312,6 +319,10 @@ export default function GoalsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // deep-link focus (?focus=<id>) support
+  const location = useLocation();
+  const focus = new URLSearchParams(location.search).get("focus");
+  const [highlightId, setHighlightId] = useState(null);
   const formRef = useRef(null);
 
   // steps local cache
@@ -340,6 +351,18 @@ export default function GoalsPage() {
   useEffect(() => {
     fetchGoals();
   }, [fetchGoals]);
+
+  // once goals are loaded, scroll to the focused goal and highlight it briefly
+  useEffect(() => {
+    if (!focus || !goals?.length) return;
+    const el = document.getElementById(`goal-${focus}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightId(String(focus));
+      const t = setTimeout(() => setHighlightId(null), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [focus, goals]);
 
   // hydrate stepsMap from goals, but only when data actually changed (focus-safe)
   useEffect(() => {
@@ -539,14 +562,15 @@ export default function GoalsPage() {
 
   // add-step input per goal
   const [stepInputs, setStepInputs] = useState({});
-  const onStepInputChange = (goalId, val) =>
-    setStepInputs((m) => ({ ...m, [goalId]: val }));
+  const onStepInputChange = (goalId, val) => setStepInputs((m) => ({ ...m, [goalId]: val }));
 
   return (
     <div className="min-h-screen bg-background text-text p-6">
       <div className="flex items-center justify-between mb-4">
         <h1 className="font-heading text-2xl">Goals</h1>
-        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">← Back to dashboard</Link>
+        <Link to="/dashboard" className="text-sm underline opacity-90 hover:opacity-100">
+          ← Back to dashboard
+        </Link>
       </div>
 
       {goalsError && <div className="text-accent mb-3">Error: {goalsError}</div>}
@@ -600,6 +624,7 @@ export default function GoalsPage() {
         submitting={submitting}
         submitError={submitError}
         handleUpdate={handleUpdate}
+        highlightId={highlightId}
       />
       <Section
         title="Completed"
@@ -625,6 +650,7 @@ export default function GoalsPage() {
         submitting={submitting}
         submitError={submitError}
         handleUpdate={handleUpdate}
+        highlightId={highlightId}
       />
       <Section
         title="Not started"
@@ -650,6 +676,7 @@ export default function GoalsPage() {
         submitting={submitting}
         submitError={submitError}
         handleUpdate={handleUpdate}
+        highlightId={highlightId}
       />
 
       <ConfirmDialog
@@ -662,5 +689,3 @@ export default function GoalsPage() {
     </div>
   );
 }
-
-
