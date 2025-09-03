@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
 
-export default function PlatformDiscoverySection() {
+ export default function PlatformDiscoverySection({ onSaveGoal }) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -55,12 +55,27 @@ export default function PlatformDiscoverySection() {
             <div className="font-semibold">{p.name}</div>
             {p.category && <div className="text-xs opacity-70">{p.category}</div>}
             <div className="mt-3 flex gap-2">
-              <a className="rounded px-3 py-2 bg-primary hover:bg-primary/80 text-sm" href={p.search_url} target="_blank" rel="noreferrer">
-                Search
-              </a>
-              <a className="rounded px-3 py-2 border border-gray-700 hover:bg-white/5 text-sm" href={p.home} target="_blank" rel="noreferrer">
-                Visit site
-              </a>
+              <button
+                className="rounded px-3 py-2 bg-secondary hover:bg-secondary/80 text-black text-sm"
+                onClick={() => {
+                  // Use the shared modal flow; no extra pages needed
+                  onSaveGoal?.({
+                    name: p.name,
+                    title: `Explore ${p.name} and pick a course`,
+                    // you could also pass p.search_url for later use if you like
+                  });
+                }}
+                >
+                  Add to bucket list
+                </button>
+                <a
+                  className="rounded px-3 py-2 border border-gray-700 hover:bg-white/5 text-sm"
+                  href={p.home}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Visit site
+                </a>
             </div>
           </motion.div>
         ))}

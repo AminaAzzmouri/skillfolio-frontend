@@ -36,11 +36,18 @@ export default function Home() {
   // --- Save as Goal modal state ---
   const [showGoal, setShowGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState(null);
-  const onSaveGoalRequest = (ann) => {
-    setGoalDraft({
-      title: `Enroll in: ${ann.title}`,
-      target_projects: 1,
-      deadline: ann.ends_at || "",
+  const onSaveGoalRequest = (item) => {
+    // Works for both announcements and platforms
+    const title =
+      item?.title
+        ? `Enroll in: ${item.title}`
+        : item?.name
+          ? `Explore ${item.name} and pick a course`
+          : "Explore a new learning platform";
+      setGoalDraft({
+        title,
+        target_projects: 1,
+        deadline: item?.ends_at || "",
     });
     setShowGoal(true);
   };
@@ -77,7 +84,7 @@ export default function Home() {
       {/* ANNOUNCEMENTS */}
       <div className="mt-8">
         <AnnouncementsSection onSaveGoal={onSaveGoalRequest} />
-        <PlatformDiscoverySection />
+        <PlatformDiscoverySection onSaveGoal={onSaveGoalRequest} />
         {/* Save as Goal Modal */}
         <Modal open={showGoal} onClose={() => setShowGoal(false)} title="Save as Goal">
           <GoalForm
