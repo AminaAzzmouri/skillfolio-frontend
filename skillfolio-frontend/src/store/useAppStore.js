@@ -241,14 +241,22 @@ export const useAppStore = create((set, get) => ({
     return { created: true, email, meta: data };
   },
 
-  async login({ email, password }) {
-    if (!email || !password) throw new Error("Missing credentials");
+  // Accept either { identifier, password } or { email, password }.
+  async login(creds) {
+    const { identifier, email, password } = creds || {};
+    const ident = (identifier ?? email ?? "").trim();
+    if (!ident || !password) throw new Error("Missing credentials");
+
+    // Send both keys so BE can authenticate by email OR username.
     const { data } = await api.post("/api/auth/login/", {
-      username: email,
+      username: ident,
+      email: ident,
       password,
     });
     const { access, refresh } = data;
-    const user = { email };
+
+    // Keep the same shape as before; store whatever the user typed.
+    const user = { email: ident };
     setAuthToken(access);
     set({ user, access, refresh });
     localStorage.setItem("sf_user", JSON.stringify({ user, access, refresh }));

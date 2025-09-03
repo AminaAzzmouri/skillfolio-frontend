@@ -4,9 +4,9 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAppStore } from "../store/useAppStore";
 
-
 export default function Login() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  // Accept either email OR username in a single field
+  const [form, setForm] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const login = useAppStore((s) => s.login);
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export default function Login() {
     e.preventDefault();
     setError("");
     try {
-      await login(form);         // mock auth
+      await login(form);         // store handles identifier/email
       navigate("/dashboard");    // go to dashboard
     } catch (err) {
       const detail =
@@ -26,19 +26,20 @@ export default function Login() {
       setError(detail);
     }
   };
+
   return (
     <div className="min-h-screen bg-background text-text flex items-center justify-center px-4">
       <form onSubmit={onSubmit} className="w-full max-w-md bg-background/80 p-6 rounded-xl border border-gray-700">
         <h1 className="font-heading text-2xl mb-6 text-center">Log in to Skillfolio</h1>
 
-        <label className="block text-sm mb-2">Email</label>
+        <label className="block text-sm mb-2">Email or username</label>
         <input
-          type="email"
+          type="text"
           required
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          value={form.identifier}
+          onChange={(e) => setForm({ ...form, identifier: e.target.value })}
           className="w-full mb-4 rounded p-3 bg-background/60 border border-gray-700 focus:outline-none"
-          placeholder="you@example.com"
+          placeholder="you@example.com or username"
         />
 
         <label className="block text-sm mb-2">Password</label>
