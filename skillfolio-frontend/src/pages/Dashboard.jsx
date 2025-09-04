@@ -174,7 +174,6 @@ export default function Dashboard() {
           <li><Link to="/certificates">Certificates</Link></li>
           <li><Link to="/projects">Projects</Link></li>
           <li><Link to="/goals">Goals</Link></li>
-          <li>Profile</li>
         </ul>
       </aside>
 
@@ -250,9 +249,6 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Certificates</h2>
-            <Link to="/certificates" className="text-xs underline opacity-80 hover:opacity-100">
-              View all
-            </Link>
           </div>
 
           {certsLoading ? (
@@ -336,9 +332,6 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Projects</h2>
-            <Link to="/projects" className="text-xs underline opacity-80 hover:opacity-100">
-              View all
-            </Link>
           </div>
 
           {projectsLoading ? (
@@ -377,9 +370,6 @@ export default function Dashboard() {
         >
           <div className="flex items-center justify-between">
             <h2 className="font-heading mb-2">Recent Goals</h2>
-            <Link to="/goals" className="text-xs underline opacity-80 hover:opacity-100">
-              View all
-            </Link>
           </div>
 
           {goalsLoading ? (

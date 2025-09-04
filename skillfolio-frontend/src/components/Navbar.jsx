@@ -13,12 +13,10 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
 
-  // Close drawer on route change
   useEffect(() => {
     setOpen(false);
   }, [location.pathname]);
 
-  // ESC to close
   const onKeyDown = useCallback((e) => {
     if (e.key === "Escape") setOpen(false);
   }, []);
@@ -29,6 +27,9 @@ export default function Navbar() {
   }, [open, onKeyDown]);
 
   const navLinks = [{ to: "/dashboard", label: "Dashboard" }];
+
+  const displayName =
+    user?.username || (user?.email ? user.email.split("@")[0] : "");
 
   return (
     <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-border shadow-sm">
@@ -45,17 +46,16 @@ export default function Navbar() {
             </Link>
           ))}
 
-          <ThemeToggle />
-
           {user ? (
             <>
-              <span className="text-sm opacity-70 ml-2">
-                {user.username || (user.email ? user.email.split("@")[0]:"")}
-              </span>
-              <button
-                className="btn btn-outline ml-1"
-                onClick={logout}
+              <Link
+                to="/profile"
+                className="text-sm opacity-80 ml-2 underline-offset-2 hover:underline"
+                title="Open profile"
               >
+                {displayName}
+              </Link>
+              <button className="btn btn-outline ml-1" onClick={logout}>
                 Logout
               </button>
             </>
@@ -69,6 +69,8 @@ export default function Navbar() {
               </Link>
             </>
           )}
+
+          <ThemeToggle />
         </nav>
 
         {/* Mobile hamburger */}
@@ -132,13 +134,14 @@ export default function Navbar() {
 
                 {user ? (
                   <>
-                    <div className="text-sm opacity-70 truncate">
-                      {user.username || (user.email ? user.email.split("@")[0]: "")}
-                    </div>
-                    <button
-                      className="btn btn-outline text-left"
-                      onClick={logout}
+                    <Link
+                      to="/profile"
+                      className="text-sm opacity-80 truncate underline-offset-2 hover:underline"
+                      title="Open profile"
                     >
+                      {displayName}
+                    </Link>
+                    <button className="btn btn-outline text-left" onClick={logout}>
                       Logout
                     </button>
                   </>
