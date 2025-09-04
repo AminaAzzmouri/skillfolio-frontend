@@ -120,11 +120,13 @@ export default function Home() {
       </div>
       
       {/* DID YOU KNOW — footer/right, well-separated from announcements */}
-      <div className="mx-auto max-w-7xl px-4 mt-40 pb-16 flex justify-end">
+      <div className="mx-auto max-w-7xl px-4 mt-10 pb-16 flex justify-end">
         <motion.aside
           className="w-full md:max-w-md rounded-lg border border-gray-700/50 bg-background/70 p-5"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ x: 140, opacity: 0 }}
+          whileInView={{ x: 0, opacity: 1 }}
+          viewport={{ amount: 0.4 }}  // triggers when ~40% is visible
+          transition={{ type: "spring", stiffness: 350, damping: 30 }}
         >
           <div className="text-sm opacity-80">Did you know?</div>
           {factLoading && <div className="mt-2 opacity-80">Loading…</div>}
