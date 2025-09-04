@@ -1,6 +1,6 @@
 /* Documentation: see docs/store/useAppStore.js.md */
 
-// Zustand store: JWT auth + certificates (API) + projects (API) + goals (API) + bootstrapping.
+// Zustand store: JWT auth + certificates (API) + projects (API) + goals (API) + profile (API) + bootstrapping.
 
 import { create } from "zustand";
 import { api, setAuthToken, logoutApi } from "../lib/api";
@@ -29,6 +29,15 @@ import {
   deleteGoal as apiDeleteGoal,
 } from "./goals";
 
+// ---- Profile API helpers ----
+import {
+  getProfile,
+  patchProfile as apiPatchProfile,
+  putProfile as apiPutProfile,
+  changePassword as apiChangePassword,
+  deleteAccount as apiDeleteAccount,
+} from "./profile";
+
 // Fallback id if needed (kept for any local/demo adders)
 const rid = () =>
   (typeof crypto !== "undefined" && crypto.randomUUID
@@ -50,7 +59,7 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await listCertificates(params);
       const items = Array.isArray(data) ? data : data?.results || [];
-      const count = Array.isArray(data) ? items.length : (data?.count ?? items.length);
+      const count = Array.isArray(data) ? items.length : data?.count ?? items.length;
       set({
         certificates: items,
         certificatesMeta: { count },
@@ -105,7 +114,7 @@ export const useAppStore = create((set, get) => ({
     try {
       const data = await listProjects(params);
       const items = Array.isArray(data) ? data : data?.results || [];
-      const count = Array.isArray(data) ? items.length : (data?.count ?? items.length);
+      const count = Array.isArray(data) ? items.length : data?.count ?? items.length;
       set({
         projects: items,
         projectsMeta: { count },
@@ -198,7 +207,7 @@ export const useAppStore = create((set, get) => ({
   },
 
   /**
-   * Create Goal — now accepts:
+   * Create Goal — accepts:
    * - title
    * - target_projects
    * - deadline
@@ -228,9 +237,72 @@ export const useAppStore = create((set, get) => ({
   },
 
   // -----------------------
+  // Profile (LIVE API)
+  // -----------------------
+  profileLoading: false,
+  profileError: null,
+
+  async fetchProfile() {
+    set({ profileLoading: true, profileError: null });
+    try {
+      const me = await getProfile();
+      // keep store.user in sync for Navbar
+      set((s) => ({
+        user: { username: me?.username || s.user?.username || "", email: me?.email || s.user?.email || "" },
+        profileLoading: false,
+      }));
+      // also refresh localStorage payload so it survives reloads
+      const raw = localStorage.getItem("sf_user");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        parsed.user = { username: me?.username || "", email: me?.email || "" };
+        localStorage.setItem("sf_user", JSON.stringify(parsed));
+      }
+      return me;
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to load profile";
+      set({ profileLoading: false, profileError: msg });
+      throw err;
+    }
+  },
+
+  async updateProfile(partialOrFull, { full = false } = {}) {
+    // full=false → PATCH; full=true → PUT (username & email must both be present)
+    const fn = full ? apiPutProfile : apiPatchProfile;
+    const updated = await fn(partialOrFull);
+    // sync store + localStorage
+    set((s) => ({
+      user: { username: updated?.username || s.user?.username || "", email: updated?.email || s.user?.email || "" },
+    }));
+    const raw = localStorage.getItem("sf_user");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      parsed.user = { username: updated?.username || "", email: updated?.email || "" };
+      localStorage.setItem("sf_user", JSON.stringify(parsed));
+    }
+    return updated;
+  },
+
+  async updatePassword({ current_password, new_password }) {
+    return apiChangePassword(current_password, new_password);
+  },
+
+  async deleteMyAccount() {
+    await apiDeleteAccount();
+    // hard logout locally (server already deleted the user)
+    setAuthToken(null);
+    set({ user: null, access: null, refresh: null });
+    localStorage.removeItem("sf_user");
+  },
+
+  // -----------------------
   // Auth
   // -----------------------
-  user: null,          // { email }
+  user: null,          // { username, email }
   access: null,        // JWT access token
   refresh: null,       // JWT refresh token
   bootstrapped: false, // flip true after restoreUser()
@@ -248,7 +320,7 @@ export const useAppStore = create((set, get) => ({
     if (!ident || !password) throw new Error("Missing credentials");
 
     // Canonical login contract: 2 fields only (email_or_username + password)
-    // Backend returns{ access, refresh, username, email } to populate navbar immediately
+    // Backend returns { access, refresh, username, email } to populate navbar immediately
     const { data } = await api.post("/api/auth/login/", {
       email_or_username: ident,
       password,
@@ -256,7 +328,7 @@ export const useAppStore = create((set, get) => ({
     const { access, refresh } = data;
 
     // Persist actual user identity from backend so Navbar can show username
-    const user = { username: data?.username || "",email: data?.email || ident };
+    const user = { username: data?.username || "", email: data?.email || ident };
     setAuthToken(access);
     set({ user, access, refresh });
     localStorage.setItem("sf_user", JSON.stringify({ user, access, refresh }));

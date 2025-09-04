@@ -61,7 +61,7 @@ export default function PlatformDiscoverySection({ onSaveGoal }) {
   useEffect(() => { setPage(1); }, [q, cost, certs, items.length]);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 mt-5 md:mt-20">
+    <section className="mx-auto max-w-7xl px-4 py-10 mt-5 md:mt-10">
       <div className="mb-3">
         <h2 className="font-heading text-xl">Find where to learn it</h2>
         <p className="text-sm opacity-80 mt-1">
