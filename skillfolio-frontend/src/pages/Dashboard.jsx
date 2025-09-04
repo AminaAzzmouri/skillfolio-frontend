@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "../store/useAppStore.js";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import ProgressBar from "../components/ProgressBar";
+import ProgressBar from "../components/ProgressBar"; // kept for recents list usage
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import ToastContainer from "../components/Toast.jsx";
 import { motion } from "framer-motion";
+
+import StatCard from "../components/StatCard";
+import { Award, Layers3, Target } from "lucide-react";
 
 // preview helpers
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
@@ -20,7 +23,7 @@ const makeFileUrl = (maybeUrl) => {
   return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
 };
 
-// small animation presets
+// small animation presets for recents sections (not for stat cards)
 const containerStagger = {
   hidden: { opacity: 0, y: 8 },
   show: {
@@ -95,7 +98,6 @@ export default function Dashboard() {
           "Failed to load analytics summary";
         if (!cancelled) {
           setSummaryError(msg);
-          // toast for analytics errors
           pushToast("error", msg);
         }
       } finally {
@@ -123,7 +125,6 @@ export default function Dashboard() {
           "Failed to load goals progress";
         if (!cancelled) {
           setGoalsProgressError(msg);
-          // toast for analytics errors
           pushToast("error", msg);
         }
       } finally {
@@ -150,30 +151,51 @@ export default function Dashboard() {
 
   // recent 5 of each
   const recentCertificates = useMemo(
-    () => (Array.isArray(certificates) ? certificates.slice(0, 5) : []),
+    () => (Array.isArray(certificates) ? certificates.slice(0, 3) : []),
     [certificates]
   );
   const recentProjects = useMemo(
-    () => (Array.isArray(projects) ? projects.slice(0, 5) : []),
+    () => (Array.isArray(projects) ? projects.slice(0, 3) : []),
     [projects]
   );
   const recentGoals = useMemo(
-    () => (Array.isArray(goals) ? goals.slice(0, 5) : []),
+    () => (Array.isArray(goals) ? goals.slice(0, 3) : []),
     [goals]
   );
+
+  // Sidebar links
+  const sideLinks = [
+    { to: "/certificates", label: "Certificates" },
+    { to: "/projects",     label: "Projects" },
+    { to: "/goals",        label: "Goals" },
+  ];
 
   return (
     <div className="flex min-h-screen bg-background text-text">
       {/* Toasts */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* Sidebar */}
+      {/* Sidebar (no borders on items now) */}
       <aside className="w-64 bg-background/90 p-4 border-r border-gray-700 hidden md:block">
         <h2 className="font-heading text-xl mb-6">Dashboard</h2>
         <ul className="flex flex-col gap-3">
-          <li><Link to="/certificates">Certificates</Link></li>
-          <li><Link to="/projects">Projects</Link></li>
-          <li><Link to="/goals">Goals</Link></li>
+          {sideLinks.map((item) => (
+            <li key={item.to}>
+              <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.99 }}
+                transition={{ type: "spring", stiffness: 420, damping: 26 }}
+                className="rounded-lg overflow-hidden"
+              >
+                <Link
+                  to={item.to}
+                  className="block px-3 py-2 bg-background/60 hover:bg-gradient-to-r hover:from-primary/25 hover:via-secondary/25 hover:to-accent/25 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
+            </li>
+          ))}
         </ul>
       </aside>
 
@@ -181,68 +203,66 @@ export default function Dashboard() {
       <main className="flex-1 p-6">
         <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
 
-        {/* KPI cards — animated container & items */}
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"
-          variants={containerStagger}
-          initial="hidden"
-          animate="show"
-        >
+        {/* KPI cards — static cards (hover/scale handled in StatCard), animated bar only */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           {/* Total Certificates */}
-          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
-            <div className="flex items-center justify-between">
-              <div className="font-semibold mb-1">Total Certificates</div>
-            </div>
-            {summaryLoading ? (
-              <Loading compact />
-            ) : summaryError ? (
-              <EmptyState message={summaryError} isError />
-            ) : summary ? (
-              <div className="text-2xl">{summary.certificates_count ?? 0}</div>
-            ) : (
-              <EmptyState message="No data yet." />
-            )}
-          </motion.div>
+          <StatCard
+            title="Total Certificates"
+            value={summaryLoading ? "…" : summary?.certificates_count ?? 0}
+            icon={Award}
+            note={summaryError ? "Error loading stats" : "All-time total"}
+          />
 
           {/* Total Projects */}
-          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
-            <div className="flex items-center justify-between">
-              <div className="font-semibold mb-1">Total Projects</div>
-            </div>
-            {summaryLoading ? (
-              <Loading compact />
-            ) : summaryError ? (
-              <EmptyState message={summaryError} isError />
-            ) : summary ? (
-              <div className="text-2xl">{summary.projects_count ?? 0}</div>
-            ) : (
-              <EmptyState message="No data yet." />
-            )}
-          </motion.div>
+          <StatCard
+            title="Total Projects"
+            value={summaryLoading ? "…" : summary?.projects_count ?? 0}
+            icon={Layers3}
+            note={summaryError ? "Error loading stats" : "All-time total"}
+          />
 
-          {/* Goal Progress */}
-          <motion.div className="bg-background/70 p-4 rounded border border-gray-700" variants={itemFade}>
-            <div className="flex items-center justify-between">
-              <div className="font-semibold mb-1">Goal Progress</div>
+          {/* Goal Progress — number + animated progress bar in one row */}
+          <StatCard
+            title="Goal Progress"
+            value="" // we'll render custom layout below
+            icon={Target}
+            note={
+              goalsProgressLoading
+                ? "Calculating…"
+                : goalsProgressError
+                ? "Error loading progress"
+                : goalsProgress.length === 0
+                ? "No goals yet"
+                : "Average across goals"
+            }
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 max-w-[220px]">
+                {/* animated stripes on track only */}
+                <div
+                  className="h-2 w-full rounded bg-gray-800/80 overflow-hidden bg-stripes"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={goalsProgressLoading ? 0 : goalProgress}
+                >
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{ width: `${goalsProgressLoading ? 0 : goalProgress}%` }}
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+              <div className="text-lg font-semibold">
+                {goalsProgressLoading ? "…" : `${goalProgress}%`}
+              </div>
             </div>
-            {goalsProgressLoading ? (
-              <Loading compact />
-            ) : goalsProgressError ? (
-              <EmptyState message={goalsProgressError} isError />
-            ) : goalsProgress.length === 0 ? (
-              <EmptyState message="No goals yet." />
-            ) : (
-              <>
-                <div className="text-2xl mb-1">{goalProgress}%</div>
-                <ProgressBar value={goalProgress} />
-              </>
-            )}
-          </motion.div>
-        </motion.div>
+          </StatCard>
+        </div>
 
         {/* Recent Certificates */}
         <motion.div
-          className="bg-background/70 p-4 rounded border border-gray-700 mb-6"
+          className="bg-background/70 p-4 rounded shadow-sm mb-6 mt-20"
           variants={containerStagger}
           initial="hidden"
           animate="show"
@@ -276,7 +296,7 @@ export default function Dashboard() {
                 return (
                   <motion.div
                     key={c.id}
-                    className="rounded border border-gray-700 bg-background/60 p-3 flex gap-3"
+                    className="rounded bg-background/60 p-3 flex gap-3 shadow-md"
                     variants={itemFade}
                   >
                     {/* Thumbnail */}
@@ -325,7 +345,7 @@ export default function Dashboard() {
 
         {/* Recent Projects */}
         <motion.div
-          className="bg-background/70 p-4 rounded border border-gray-700 mb-6"
+          className="bg-background/70 p-4 rounded shadow-sm mb-6"
           variants={containerStagger}
           initial="hidden"
           animate="show"
@@ -345,7 +365,7 @@ export default function Dashboard() {
               {recentProjects.map((p) => (
                 <motion.div
                   key={p.id}
-                  className="rounded border border-gray-700 bg-background/60 p-3"
+                  className="rounded bg-background/60 p-3 shadow-md"
                   variants={itemFade}
                 >
                   <div className="font-medium truncate">{p.title}</div>
@@ -363,7 +383,7 @@ export default function Dashboard() {
 
         {/* Recent Goals */}
         <motion.div
-          className="bg-background/70 p-4 rounded border border-gray-700"
+          className="bg-background/70 p-4 rounded shadow-sm mb-6"
           variants={containerStagger}
           initial="hidden"
           animate="show"
@@ -383,14 +403,14 @@ export default function Dashboard() {
               {recentGoals.map((g) => (
                 <motion.div
                   key={g.id}
-                  className="rounded border border-gray-700 bg-background/60 p-3"
+                  className="rounded bg-background/60 p-3 shadow-md"
                   variants={itemFade}
                 >
                   <div className="font-medium truncate">{g.title || "Untitled goal"}</div>
                   <div className="text-xs opacity-80 mt-1">
                     Target: {g.target_projects} • Deadline: {g.deadline}
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 max-w-[160px]">
                     <ProgressBar value={g.steps_progress_percent ?? 0} label="Checklist progress" />
                   </div>
                 </motion.div>
