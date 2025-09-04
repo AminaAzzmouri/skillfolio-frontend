@@ -1,7 +1,4 @@
 // Docs: see docs/announcements.md
-
-import { Link } from "react-router-dom";
-
 function fmtDate(s) {
   if (!s) return null;
   const d = new Date(s);
@@ -9,7 +6,18 @@ function fmtDate(s) {
 }
 
 export default function AnnouncementCard({ item, onSaveGoal }) {
-  const { title, platform, type, url, starts_at, ends_at, discount_pct, price_original, price_current, tags } = item;
+  const {
+    title,
+    platform,
+    type,
+    url,
+    starts_at,
+    ends_at,
+    discount_pct,
+    price_original,
+    price_current,
+    tags,
+  } = item;
 
   const period = [fmtDate(starts_at), fmtDate(ends_at)].filter(Boolean).join(" → ");
   const showDiscount = type === "discount" && (discount_pct || price_current);
@@ -30,7 +38,9 @@ export default function AnnouncementCard({ item, onSaveGoal }) {
               {price_current != null && (
                 <>
                   {" "}• Now {price_current}
-                  {price_original != null && <span className="opacity-70"> (was {price_original})</span>}
+                  {price_original != null && (
+                    <span className="opacity-70"> (was {price_original})</span>
+                  )}
                 </>
               )}
             </div>
@@ -41,7 +51,12 @@ export default function AnnouncementCard({ item, onSaveGoal }) {
       {tags?.length ? (
         <div className="flex flex-wrap gap-1">
           {tags.map((t) => (
-            <span key={t} className="text-xs rounded px-2 py-0.5 border border-gray-800 opacity-80">{t}</span>
+            <span
+              key={t}
+              className="text-xs rounded px-2 py-0.5 border border-gray-800 opacity-80"
+            >
+              {t}
+            </span>
           ))}
         </div>
       ) : null}
@@ -53,7 +68,7 @@ export default function AnnouncementCard({ item, onSaveGoal }) {
           target="_blank"
           rel="noreferrer"
         >
-          Visit
+          Check offer
         </a>
         <button
           className="rounded px-3 py-2 bg-secondary hover:bg-secondary/80 transition text-black text-sm"
@@ -61,9 +76,6 @@ export default function AnnouncementCard({ item, onSaveGoal }) {
         >
           Save as Goal
         </button>
-        <Link to="/dashboard" className="text-xs underline opacity-80 hover:opacity-100 ml-auto">
-          See my progress
-        </Link>
       </div>
     </div>
   );
