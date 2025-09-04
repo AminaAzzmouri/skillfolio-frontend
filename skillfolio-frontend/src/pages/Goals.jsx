@@ -74,7 +74,7 @@ function Section({
                 key={g.id}
                 id={`goal-${g.id}`}
                 className={`p-3 rounded border border-gray-700 bg-background/70 ${
-                  String(highlightId) === String(g.id) ? "ring-2 ring-secondary animate-pulse" : ""
+                  String(highlightId) === String(g.id) ? "ring-2 ring-secondary/80 shadow-Ig shadow-secondary/20 animate-pulse" : ""
                 }`}
               >
                 {!isEditing ? (
@@ -359,7 +359,7 @@ export default function GoalsPage() {
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       setHighlightId(String(focus));
-      const t = setTimeout(() => setHighlightId(null), 2500);
+      const t = setTimeout(() => setHighlightId(null), 1500);
       return () => clearTimeout(t);
     }
   }, [focus, goals]);

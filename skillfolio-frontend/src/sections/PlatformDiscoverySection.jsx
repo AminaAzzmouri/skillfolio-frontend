@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api } from "../lib/api";
 
- export default function PlatformDiscoverySection({ onSaveGoal }) {
+export default function PlatformDiscoverySection({ onSaveGoal }) {
   const [q, setQ] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +32,12 @@ import { api } from "../lib/api";
         <p className="text-sm opacity-80 mt-1">
           Type what you want to learn — we’ll link you to platform search pages.
         </p>
+        {/* TIP */}
+        {onSaveGoal && (
+          <div className="mt-2 text-xs opacity-70">
+            🗒️ Tip: “Add to bucket list” creates a personal goal so you can track exploring this platform.
+          </div>
+        )}
       </div>
 
       <input
@@ -54,28 +60,27 @@ import { api } from "../lib/api";
           >
             <div className="font-semibold">{p.name}</div>
             {p.category && <div className="text-xs opacity-70">{p.category}</div>}
+
             <div className="mt-3 flex gap-2">
               <button
                 className="rounded px-3 py-2 bg-secondary hover:bg-secondary/80 text-black text-sm"
                 onClick={() => {
-                  // Use the shared modal flow; no extra pages needed
                   onSaveGoal?.({
                     name: p.name,
                     title: `Explore ${p.name} and pick a course`,
-                    // you could also pass p.search_url for later use if you like
                   });
                 }}
-                >
-                  Add to bucket list
-                </button>
-                <a
-                  className="rounded px-3 py-2 border border-gray-700 hover:bg-white/5 text-sm"
-                  href={p.home}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Visit site
-                </a>
+              >
+                Add to bucket list
+              </button>
+              <a
+                className="rounded px-3 py-2 border border-gray-700 hover:bg-white/5 text-sm"
+                href={p.home}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Visit site
+              </a>
             </div>
           </motion.div>
         ))}
@@ -83,3 +88,6 @@ import { api } from "../lib/api";
     </section>
   );
 }
+
+
+
