@@ -18,9 +18,13 @@ export default {
         secondary: "rgb(var(--color-secondary) / <alpha-value>)",
         accent: "rgb(var(--color-accent) / <alpha-value>)",
       },
+      boxShadow: {
+        soft: "0 2px 8px rgba(0,0,0,0.08)",
+        brand: "0 2px 10px rgba(99,102,241,0.15)", // uses primary indigo
+        },
       fontFamily: {
-        heading: ['"Roboto Mono"', "monospace"],
-        body: ["Roboto", "sans-serif"],
+        heading: ['"Outfit"', "system-ui", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
+        body: ['"Inter"', "system-ui", "Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"],
       },
     },
   },
