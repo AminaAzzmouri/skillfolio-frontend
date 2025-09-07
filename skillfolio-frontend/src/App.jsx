@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Navbar from "./components/Navbar.jsx";
 import { Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage.jsx";
-import Home from "./pages/Home.jsx";              // NEW
+import Home from "./pages/Home.jsx"; // NEW
 import Dashboard from "./pages/Dashboard.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -14,6 +14,7 @@ import Goals from "./pages/Goals.jsx";
 import Profile from "./pages/Profile.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAppStore } from "./store/useAppStore";
+import FlashBanner from "./components/FlashBanner";
 
 // Small inline gate: show Landing for guests, Home for authed users
 function HomeGate() {
@@ -33,6 +34,7 @@ export default function App() {
   return (
     <>
       <Navbar />
+      <FlashBanner />
       <Routes>
         {/* Home now decides based on auth state */}
         <Route path="/" element={<HomeGate />} />
@@ -64,8 +66,8 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-       <Route 
-          path="/goals" 
+        <Route
+          path="/goals"
           element={
             <ProtectedRoute>
               <Goals />
