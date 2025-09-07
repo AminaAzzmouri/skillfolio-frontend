@@ -27,7 +27,7 @@ export default function Pagination({
         Prev
       </button>
 
-      <span className="opacity-80">
+      <span className="font-heading opacity-80">
         Page <b>{p}</b> of <b>{pageCount}</b>
       </span>
 

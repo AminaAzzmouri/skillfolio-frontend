@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, title = "", children, maxWidth = 
           aria-modal="true"
         >
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <h3 className="text-lg font-semibold">{title}</h3>
+            <h3 className="font-heading text-lg font-semibold">{title}</h3>
             <button
               className="px-3 py-1 rounded border border-border hover:bg-background/40"
               onClick={onClose}

@@ -6,8 +6,15 @@ import { useEffect, useMemo, useState } from "react";
  * SearchBar
  * - Debounces input and calls onChange(term)
  * - Optional: controlled by `value` prop
+ * - Accepts optional `className` for extra layout classes
  */
-export default function SearchBar({ value = "", onChange, placeholder = "Search…" , delay = 400 }) {
+export default function SearchBar({
+  value = "",
+  onChange,
+  placeholder = "Search…",
+  delay = 400,
+  className = "",
+}) {
   const [local, setLocal] = useState(value);
 
   // keep in sync if parent changes value externally
@@ -24,7 +31,17 @@ export default function SearchBar({ value = "", onChange, placeholder = "Search�
 
   return (
     <input
-      className="w-full rounded p-3 bg-background/60 border border-gray-700"
+      className={
+        [
+          // unified input look (light beige, dark translucent)
+          "w-full rounded h-10 px-3 text-sm",
+          "bg-background/60 shadow-lg ring-1 ring-border/100",   // light theme
+          "dark:bg-background/60 dark:ring-white/10",       // dark theme
+          "focus:outline-none focus:ring-2 focus:ring-primary/50",
+          "placeholder:opacity-70",
+          className,
+        ].join(" ")
+      }
       placeholder={placeholder}
       value={local}
       onChange={(e) => {
