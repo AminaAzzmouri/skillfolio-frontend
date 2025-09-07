@@ -43,7 +43,9 @@ export default function Profile() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeletedNotice, setShowDeletedNotice] = useState(false);
 
-  useEffect(() => { fetchProfile().catch(() => {}); }, []);
+  useEffect(() => {
+    fetchProfile().catch(() => {});
+  }, []);
   useEffect(() => {
     setUsername(user?.username || "");
     setEmail(user?.email || "");
@@ -64,31 +66,31 @@ export default function Profile() {
     e?.message ||
     fallback;
 
-  // precise scroll to banner (accounts for sticky navbar ~64–80px)
   const scrollBannerIntoView = () => {
     if (!bannerRef.current) return;
     const offset = 80;
-    const y = bannerRef.current.getBoundingClientRect().top + window.scrollY - offset;
+    const y =
+      bannerRef.current.getBoundingClientRect().top + window.scrollY - offset;
     window.scrollTo({ top: y, behavior: "smooth" });
     bannerRef.current.focus({ preventScroll: true });
   };
 
-  // whenever a banner message appears, scroll & focus
   useEffect(() => {
     if (successMsg || errorMsg || profileError) scrollBannerIntoView();
   }, [successMsg, errorMsg, profileError]);
 
   const clearSuccessSoon = () => setTimeout(() => setSuccessMsg(""), 3500);
 
-  // ---- Profile save (PATCH) ----
   const onSave = async () => {
     setFieldErrs({ username: "", email: "" });
     setErrorMsg("");
     setSuccessMsg("");
 
     const patch = {};
-    if ((username ?? "") !== (user?.username ?? "")) patch.username = (username ?? "").trim();
-    if ((email ?? "") !== (user?.email ?? "")) patch.email = (email ?? "").trim();
+    if ((username ?? "") !== (user?.username ?? ""))
+      patch.username = (username ?? "").trim();
+    if ((email ?? "") !== (user?.email ?? ""))
+      patch.email = (email ?? "").trim();
     if (Object.keys(patch).length === 0) return;
 
     try {
@@ -108,24 +110,33 @@ export default function Profile() {
       );
       clearSuccessSoon();
     } catch (e) {
-      // Handle field-level errors first
       const data = e?.response?.data;
       if (data && typeof data === "object") {
         const next = { username: "", email: "" };
         let focused = false;
 
         if (data.username) {
-          next.username = Array.isArray(data.username) ? data.username[0] : String(data.username);
+          next.username = Array.isArray(data.username)
+            ? data.username[0]
+            : String(data.username);
           if (usernameRef.current && !focused) {
-            usernameRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+            usernameRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
             usernameRef.current.focus();
             focused = true;
           }
         }
         if (data.email) {
-          next.email = Array.isArray(data.email) ? data.email[0] : String(data.email);
+          next.email = Array.isArray(data.email)
+            ? data.email[0]
+            : String(data.email);
           if (emailRef.current && !focused) {
-            emailRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+            emailRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
             emailRef.current.focus();
             focused = true;
           }
@@ -143,7 +154,6 @@ export default function Profile() {
     }
   };
 
-  // ---- Password update (fixed) ----
   const onChangePassword = async () => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -156,13 +166,11 @@ export default function Profile() {
         new_password: newPassword,
       });
 
-      // Success: make new password become the current one for any subsequent change
       setSuccessMsg("Password updated");
-      setCurrentPassword(newPassword); // <-- new becomes current
-      setNewPassword("");             // <-- clear new field
+      setCurrentPassword(newPassword);
+      setNewPassword("");
       clearSuccessSoon();
     } catch (e) {
-      // Extract the most helpful message for "incorrect current password"
       const data = e?.response?.data;
       const status = e?.response?.status;
 
@@ -178,22 +186,22 @@ export default function Profile() {
         ? data.non_field_errors
         : null;
 
-      // Common server messages we normalize:
       const detail = typeof data?.detail === "string" ? data.detail : null;
 
       let msg =
         fieldErrCurrent ||
         nonField ||
         detail ||
-        (status === 400 ? "Incorrect current password" : apiErr(e, "Failed to change password"));
+        (status === 400
+          ? "Incorrect current password"
+          : apiErr(e, "Failed to change password"));
 
-      setErrorMsg(msg); // Banner shows + scrolls/focuses automatically
+      setErrorMsg(msg);
     } finally {
       setSavingPassword(false);
     }
   };
 
-  // ---- Delete flow ----
   const startDelete = () => {
     if (confirmDelete !== "DELETE") return;
     setShowDeleteConfirm(true);
@@ -232,29 +240,35 @@ export default function Profile() {
                 : "border-red-900 bg-red-950/30 text-red-200"
             }`}
           >
-            {successMsg || errorMsg || `Failed to load profile: ${String(profileError)}`}
+            {successMsg ||
+              errorMsg ||
+              `Failed to load profile: ${String(profileError)}`}
           </div>
         )}
 
         {/* Account info */}
-        <section className="rounded border border-gray-700 bg-background/70 p-4">
+        <section className="rounded ring-1 ring-border/60 bg-surface p-4 dark:bg-background/70 dark:ring-white/10">
           <h2 className="font-semibold mb-3">Update account</h2>
           <div className="grid gap-3">
             <label className="text-sm">
               <div className="opacity-80 mb-1">Username</div>
               <input
                 ref={usernameRef}
-                className={`w-full rounded p-2 bg-background/60 border ${
-                  fieldErrs.username ? "border-accent" : "border-gray-700"
-                }`}
+                autoComplete="username"
+                className={`w-full rounded p-2 bg-background/60 ring-1 ${
+                  fieldErrs.username ? "ring-accent" : "ring-border/60"
+                } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                 value={username}
                 onChange={(e) => {
                   setUsername(e.target.value);
-                  if (fieldErrs.username) setFieldErrs((x) => ({ ...x, username: "" }));
+                  if (fieldErrs.username)
+                    setFieldErrs((x) => ({ ...x, username: "" }));
                 }}
               />
               {fieldErrs.username && (
-                <div className="mt-1 text-xs text-accent">{fieldErrs.username}</div>
+                <div className="mt-1 text-xs text-accent">
+                  {fieldErrs.username}
+                </div>
               )}
             </label>
 
@@ -262,44 +276,58 @@ export default function Profile() {
               <div className="opacity-80 mb-1">Email</div>
               <input
                 ref={emailRef}
-                className={`w-full rounded p-2 bg-background/60 border ${
-                  fieldErrs.email ? "border-accent" : "border-gray-700"
-                }`}
+                autoComplete="email"
+                className={`w-full rounded p-2 bg-background/60 ring-1 ${
+                  fieldErrs.email ? "ring-accent" : "ring-border/60"
+                } focus:outline-none focus:ring-2 focus:ring-primary/50`}
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  if (fieldErrs.email) setFieldErrs((x) => ({ ...x, email: "" }));
+                  if (fieldErrs.email)
+                    setFieldErrs((x) => ({ ...x, email: "" }));
                 }}
               />
               {fieldErrs.email && (
-                <div className="mt-1 text-xs text-accent">{fieldErrs.email}</div>
+                <div className="mt-1 text-xs text-accent">
+                  {fieldErrs.email}
+                </div>
               )}
             </label>
 
-            <button
-              type="button"
-              className={`rounded px-3 py-2 transition ${
-                dirty && !savingProfile && !profileLoading
-                  ? "bg-primary hover:bg-primary/80"
-                  : "bg-gray-700 text-gray-300 cursor-not-allowed"
-              }`}
-              onClick={onSave}
-              disabled={!dirty || savingProfile || profileLoading}
-            >
-              {savingProfile ? "Saving…" : "Save changes"}
-            </button>
+            <div className="mt-1 flex flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername(user?.username || "");
+                  setEmail(user?.email || "");
+                }}
+                disabled={savingProfile || profileLoading || !dirty}
+                className="btn btn-ghost w-auto px-3 py-1.5 text-sm"
+              >
+                Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={onSave}
+                disabled={!dirty || savingProfile || profileLoading}
+                className="btn btn-primary w-auto px-3 py-1.5 text-sm  dirty && !savingProfile && !profileLoading disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingProfile ? "Saving…" : "Save changes"}
+              </button>
+            </div>
           </div>
         </section>
 
         {/* Password */}
-        <section className="rounded border border-gray-700 bg-background/70 p-4">
+        <section className="rounded ring-1 ring-border/60 bg-surface p-4 dark:bg-background/70 dark:ring-white/10">
           <h2 className="font-semibold mb-3">Change password</h2>
           <div className="grid gap-3">
             <label className="text-sm">
               <div className="opacity-80 mb-1">Current password</div>
               <input
                 type="password"
-                className="w-full rounded p-2 bg-background/60 border border-gray-700"
+                className="w-full rounded p-2 bg-background/60 ring-1 ring-border/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
@@ -308,70 +336,89 @@ export default function Profile() {
               <div className="opacity-80 mb-1">New password</div>
               <input
                 type="password"
-                className="w-full rounded p-2 bg-background/60 border border-gray-700"
+                className="w-full rounded p-2 bg-background/60 ring-1 ring-border/60 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
               />
             </label>
-            <button
-              type="button"
-              className={`rounded px-3 py-2 transition ${
-                currentPassword && newPassword && !savingPassword
-                  ? "bg-primary hover:bg-primary/80"
-                  : "bg-gray-700 text-gray-300 cursor-not-allowed"
-              }`}
-              onClick={onChangePassword}
-              disabled={!currentPassword || !newPassword || savingPassword}
-            >
-              {savingPassword ? "Updating…" : "Update password"}
-            </button>
+            <div className="mt-1 flex flex-row items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentPassword("");
+                  setNewPassword("");
+                }}
+                disabled={savingPassword || (!currentPassword && !newPassword)}
+                className="btn btn-ghost w-auto px-3 py-1.5 text-sm"
+              >
+                Reset
+              </button>
+
+              <button
+                type="button"
+                onClick={onChangePassword}
+                disabled={!currentPassword || !newPassword || savingPassword}
+                className="btn btn-primary w-auto px-3 py-1.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {savingPassword ? "Updating…" : "Update password"}
+              </button>
+            </div>
           </div>
         </section>
 
         {/* Danger zone */}
-        <section className="rounded border border-red-900 bg-red-950/20 p-4">
-          <h2 className="font-semibold mb-3 text-red-300">Danger zone</h2>
+        <section className="rounded ring-1 ring-red-300/60 bg-red-50/60 p-4 dark:bg-red-950/20 dark:ring-red-900/60">
+          <h2 className="font-semibold mb-3 text-red-700 dark:text-red-300">
+            Danger zone
+          </h2>
           <p className="text-sm opacity-80 mb-3">
             Type <span className="font-mono">DELETE</span> to confirm.
           </p>
           <div className="flex items-center gap-2">
             <input
-              className="w-44 rounded p-2 bg-background/60 border border-gray-700"
+              className="w-44 rounded p-2 bg-red-50/70 ring-1 ring-red-300/70 focus:outline-none focus:ring-2 focus:ring-red-400/70 dark:bg-background/60 dark:ring-red-900/60"
               value={confirmDelete}
               onChange={(e) => setConfirmDelete(e.target.value)}
             />
             <button
               type="button"
-              className={`rounded px-3 py-2 transition ${
+              className={`btn ${
                 confirmDelete === "DELETE" && !deleting
-                  ? "bg-accent text-black hover:bg-accent/80"
-                  : "bg-gray-700 text-gray-300 cursor-not-allowed"
-              }`}
+                  ? "btn-danger"
+                  : "btn-ghost cursor-not-allowed"
+              } ring-1 ring-red-300/70 dark:ring-red-900/60`}
               disabled={confirmDelete !== "DELETE" || deleting}
               onClick={startDelete}
             >
-              Delete account
+              {deleting ? "Deleting…" : "Delete account"}
             </button>
           </div>
         </section>
       </div>
 
       {/* Confirm delete modal */}
-      <Modal open={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete account?">
+      <Modal
+        open={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Delete account?"
+      >
         <div className="space-y-3">
           <p className="text-sm opacity-80">
-            This action is permanent. Your account and all personal data will be removed.
+            This action is permanent. Your account and all personal data will be
+            removed.
           </p>
           <div className="flex gap-2 justify-end">
             <button
-              className="px-3 py-2 rounded border border-gray-700 hover:bg-white/5"
+              className="btn btn-outline"
               onClick={() => setShowDeleteConfirm(false)}
               disabled={deleting}
             >
               Cancel
             </button>
             <button
-              className={`px-3 py-2 rounded ${deleting ? "bg-gray-700 text-gray-300" : "bg-accent text-black hover:bg-accent/80"}`}
+              className={`btn ${
+                deleting ? "btn-ghost cursor-not-allowed" : "btn-danger"
+              }`}
               onClick={actuallyDelete}
               disabled={deleting}
             >
@@ -382,14 +429,18 @@ export default function Profile() {
       </Modal>
 
       {/* Deleted notice modal */}
-      <Modal open={showDeletedNotice} onClose={() => {}} title="Account deleted">
+      <Modal
+        open={showDeletedNotice}
+        onClose={() => {}}
+        title="Account deleted"
+      >
         <div className="space-y-3">
           <p className="text-sm opacity-90">
             Your account was successfully deleted. We’re sorry to see you go.
           </p>
           <div className="flex gap-2 justify-end">
             <button
-              className="px-3 py-2 rounded bg-primary hover:bg-primary/80"
+              className="btn btn-primary"
               onClick={() => navigate("/login", { replace: true })}
             >
               Go to Login
