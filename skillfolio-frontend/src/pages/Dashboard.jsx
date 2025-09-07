@@ -8,19 +8,41 @@ import ProgressBar from "../components/ProgressBar"; // kept for recents list us
 import Loading from "../components/Loading";
 import EmptyState from "../components/EmptyState";
 import ToastContainer from "../components/Toast.jsx";
+import SectionHeader from "../components/SectionHeader";
 import { motion } from "framer-motion";
 
 import StatCard from "../components/StatCard";
-import { Award, Layers3, Target } from "lucide-react";
+import {
+  Award,
+  Layers3,
+  Target,
+  CheckCircle2,
+  CalendarDays,
+  Clock3,
+} from "lucide-react";
 
 // preview helpers
 const isImageUrl = (url) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(url || "");
-const isPdfUrl   = (url) => /\.pdf$/i.test(url || "");
+const isPdfUrl = (url) => /\.pdf$/i.test(url || "");
 const makeFileUrl = (maybeUrl) => {
   if (!maybeUrl || typeof maybeUrl !== "string") return null;
   if (maybeUrl.startsWith("http")) return maybeUrl;
   const base = api?.defaults?.baseURL || "";
   return `${base.replace(/\/$/, "")}/${maybeUrl.replace(/^\//, "")}`;
+};
+
+const STATUS_META = {
+  planned: { label: "Planned", Icon: CalendarDays, className: "text-sky-400" },
+  in_progress: {
+    label: "In Progress",
+    Icon: Clock3,
+    className: "text-amber-400",
+  },
+  completed: {
+    label: "Completed",
+    Icon: CheckCircle2,
+    className: "text-green-400",
+  },
 };
 
 // small animation presets for recents sections (not for stat cards)
@@ -39,22 +61,22 @@ const itemFade = {
 
 export default function Dashboard() {
   // store data
-  const certificates   = useAppStore((s) => s.certificates);
-  const projects       = useAppStore((s) => s.projects);
-  const goals          = useAppStore((s) => s.goals);
+  const certificates = useAppStore((s) => s.certificates);
+  const projects = useAppStore((s) => s.projects);
+  const goals = useAppStore((s) => s.goals);
 
   // loading / errors
-  const certsLoading   = useAppStore((s) => s.certificatesLoading);
-  const certsError     = useAppStore((s) => s.certificatesError);
-  const projectsLoading= useAppStore((s) => s.projectsLoading);
-  const projectsError  = useAppStore((s) => s.projectsError);
-  const goalsLoading   = useAppStore((s) => s.goalsLoading);
-  const goalsError     = useAppStore((s) => s.goalsError);
+  const certsLoading = useAppStore((s) => s.certificatesLoading);
+  const certsError = useAppStore((s) => s.certificatesError);
+  const projectsLoading = useAppStore((s) => s.projectsLoading);
+  const projectsError = useAppStore((s) => s.projectsError);
+  const goalsLoading = useAppStore((s) => s.goalsLoading);
+  const goalsError = useAppStore((s) => s.goalsError);
 
   // actions
   const fetchCertificates = useAppStore((s) => s.fetchCertificates);
-  const fetchProjects     = useAppStore((s) => s.fetchProjects);
-  const fetchGoals        = useAppStore((s) => s.fetchGoals);
+  const fetchProjects = useAppStore((s) => s.fetchProjects);
+  const fetchGoals = useAppStore((s) => s.fetchGoals);
 
   // --- analytics states (from /api/analytics/*) ---
   const [summary, setSummary] = useState(null);
@@ -70,7 +92,11 @@ export default function Dashboard() {
   const pushToast = (type, message) =>
     setToasts((t) => [
       ...t,
-      { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, type, message },
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        type,
+        message,
+      },
     ]);
   const dismissToast = (id) => setToasts((t) => t.filter((x) => x.id !== id));
 
@@ -93,7 +119,9 @@ export default function Dashboard() {
       } catch (e) {
         const msg =
           e?.response?.data?.detail ||
-          (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+          (typeof e?.response?.data === "object"
+            ? JSON.stringify(e?.response?.data)
+            : e?.response?.data) ||
           e?.message ||
           "Failed to load analytics summary";
         if (!cancelled) {
@@ -104,7 +132,9 @@ export default function Dashboard() {
         if (!cancelled) setSummaryLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Fetch analytics goals progress
@@ -120,7 +150,9 @@ export default function Dashboard() {
       } catch (e) {
         const msg =
           e?.response?.data?.detail ||
-          (typeof e?.response?.data === "object" ? JSON.stringify(e?.response?.data) : e?.response?.data) ||
+          (typeof e?.response?.data === "object"
+            ? JSON.stringify(e?.response?.data)
+            : e?.response?.data) ||
           e?.message ||
           "Failed to load goals progress";
         if (!cancelled) {
@@ -131,7 +163,9 @@ export default function Dashboard() {
         if (!cancelled) setGoalsProgressLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Average progress from /api/analytics/goals-progress/
@@ -166,8 +200,8 @@ export default function Dashboard() {
   // Sidebar links
   const sideLinks = [
     { to: "/certificates", label: "Certificates" },
-    { to: "/projects",     label: "Projects" },
-    { to: "/goals",        label: "Goals" },
+    { to: "/projects", label: "Projects" },
+    { to: "/goals", label: "Goals" },
   ];
 
   return (
@@ -201,10 +235,12 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="flex-1 p-6">
-        <h1 className="text-2xl font-heading mb-4">Welcome to Your Dashboard</h1>
+        <h1 className="text-2xl font-heading mb-4">
+          Welcome to Your Dashboard
+        </h1>
 
         {/* KPI cards — static cards (hover/scale handled in StatCard), animated bar only */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           {/* Total Certificates */}
           <StatCard
             title="Total Certificates"
@@ -248,7 +284,9 @@ export default function Dashboard() {
                 >
                   <div
                     className="h-full bg-primary transition-all duration-500"
-                    style={{ width: `${goalsProgressLoading ? 0 : goalProgress}%` }}
+                    style={{
+                      width: `${goalsProgressLoading ? 0 : goalProgress}%`,
+                    }}
                     aria-hidden="true"
                   />
                 </div>
@@ -258,21 +296,76 @@ export default function Dashboard() {
               </div>
             </div>
           </StatCard>
+          <StatCard
+            title="Goals Completed"
+            value={
+              summaryLoading
+                ? "…"
+                : `${summary?.goals_completed_count ?? 0}/${
+                    summary?.goals_count ?? 0
+                  }`
+            }
+            icon={CheckCircle2}
+            note={
+              summaryLoading
+                ? "Calculating…"
+                : summaryError
+                ? "Error loading stats"
+                : (summary?.goals_count ?? 0) === 0
+                ? "No goals yet"
+                : "Completed vs total"
+            }
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 max-w-[220px]">
+                <div
+                  className="h-2 w-full rounded bg-gray-800/80 overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={
+                    summaryLoading
+                      ? 0
+                      : summary?.goals_completion_rate_percent ?? 0
+                  }
+                >
+                  <div
+                    className="h-full bg-primary transition-all duration-500"
+                    style={{
+                      width: `${
+                        summaryLoading
+                          ? 0
+                          : summary?.goals_completion_rate_percent ?? 0
+                      }%`,
+                    }}
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+              <div className="text-lg font-semibold">
+                {summaryLoading
+                  ? "…"
+                  : `${summary?.goals_completion_rate_percent ?? 0}%`}
+              </div>
+            </div>
+          </StatCard>
         </div>
 
         {/* Recent Certificates */}
         <motion.div
-          className="bg-background/70 p-4 rounded shadow-sm mb-6 mt-20"
+          className="bg-background/70 p-4 rounded-lg shadow-md dark:shadow-xl dark:shadow-black/40 mb-6 mt-20"
           variants={containerStagger}
           initial="hidden"
           animate="show"
         >
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading mb-2">Recent Certificates</h2>
-          </div>
+          <SectionHeader
+            icon={Award}
+            title="Recent Certificates"
+            count={Array.isArray(certificates) ? certificates.length : 0}
+          /> 
 
           {certsLoading ? (
-            <Loading />
+            <Loading />  
           ) : certsError ? (
             <EmptyState message={certsError} isError />
           ) : certificates.length === 0 ? (
@@ -282,7 +375,8 @@ export default function Dashboard() {
                   No certificates yet.{" "}
                   <Link className="underline" to="/certificates">
                     Add your first one
-                  </Link>.
+                  </Link>
+                  .
                 </>
               }
             />
@@ -296,7 +390,7 @@ export default function Dashboard() {
                 return (
                   <motion.div
                     key={c.id}
-                    className="rounded bg-background/60 p-3 flex gap-3 shadow-md"
+                    className="rounded-lg bg-background/80 backdrop-blur-sm p-4 flex gap-3 shadow-md dark:shadow-none ring-1 ring-border/50 dark:ring-white/5"
                     variants={itemFade}
                   >
                     {/* Thumbnail */}
@@ -322,12 +416,15 @@ export default function Dashboard() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{c.title}</div>
-                      <div className="text-sm opacity-80 truncate">
+                      <div className="text-xs mt-1 opacity-80 truncate">
                         {c.issuer} {c.date_earned ? `• ${c.date_earned}` : null}
                       </div>
+                      {/* Spacer pushes link down */}
+                      <div className="flex-1" />
+                      { /* View file link */ }
                       {url && (
                         <a
-                          className="text-xs underline inline-block mt-1"
+                          className="text-xs underline inline-block mt-5"
                           href={url}
                           target="_blank"
                           rel="noreferrer"
@@ -345,35 +442,63 @@ export default function Dashboard() {
 
         {/* Recent Projects */}
         <motion.div
-          className="bg-background/70 p-4 rounded shadow-sm mb-6"
+          className="bg-background/70 p-4 rounded-lg shadow-md dark:shadow-xl dark:shadow-black/40 mb-6 mt-20"
           variants={containerStagger}
           initial="hidden"
           animate="show"
         >
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading mb-2">Recent Projects</h2>
-          </div>
+          <SectionHeader
+            icon={Layers3}
+            title="Recent Projects"
+            count={Array.isArray(projects) ? projects.length : 0}
+          />
 
           {projectsLoading ? (
             <Loading />
           ) : projectsError ? (
             <EmptyState message={projectsError} isError />
           ) : projects.length === 0 ? (
-            <EmptyState message="No projects yet." />
+            <EmptyState
+              message={
+                <>
+                  No projects yet.{" "}
+                  <Link className="underline" to="/projects">
+                    Start Building Now
+                  </Link>
+                  .
+                </>
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentProjects.map((p) => (
                 <motion.div
                   key={p.id}
-                  className="rounded bg-background/60 p-3 shadow-md"
+                  className="rounded-lg bg-background/80 backdrop-blur-sm p-4 shadow-md dark:shadow-none ring-1 ring-border/50 dark:ring-white/5"
                   variants={itemFade}
                 >
                   <div className="font-medium truncate">{p.title}</div>
-                  <div className="text-xs opacity-80 mt-1">
-                    Status: <span className="opacity-90">{p.status || "planned"}</span>
+                  <div className="text-xs opacity-80 mt-1 flex items-center gap-1.5">
+                    {(() => {
+                      const meta =
+                        STATUS_META[p.status || "planned"] ||
+                        STATUS_META.planned;
+                      const Icon = meta.Icon;
+                      return (
+                        <>
+                          <Icon
+                            className={`w-4 h-4 ${meta.className}`}
+                            aria-hidden="true"
+                          />
+                          <span className="opacity-90">{meta.label}</span>
+                        </>
+                      );
+                    })()}
                   </div>
                   {p.description && (
-                    <div className="text-sm opacity-80 mt-2 line-clamp-3">{p.description}</div>
+                    <div className="text-sm opacity-80 mt-8 line-clamp-3">
+                      {p.description}
+                    </div>
                   )}
                 </motion.div>
               ))}
@@ -383,39 +508,56 @@ export default function Dashboard() {
 
         {/* Recent Goals */}
         <motion.div
-          className="bg-background/70 p-4 rounded shadow-sm mb-6"
+          className="bg-background/70 p-4 rounded-lg shadow-md dark:shadow-xl dark:shadow-black/40 mb-6 mt-20"
           variants={containerStagger}
           initial="hidden"
           animate="show"
         >
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading mb-2">Recent Goals</h2>
-          </div>
+          <SectionHeader
+            icon={Target}
+            title="Recent Goals"
+            count={Array.isArray(goals) ? goals.length : 0}
+          />
 
           {goalsLoading ? (
             <Loading />
           ) : goalsError ? (
             <EmptyState message={goalsError} isError />
           ) : goals.length === 0 ? (
-            <EmptyState message="No goals yet." />
+            <EmptyState
+              message={
+                <>
+                  No goals yet.{" "}
+                  <Link className="underline" to="/goals">
+                    Set a new goal here
+                  </Link>
+                  .
+                </>
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentGoals.map((g) => (
                 <motion.div
                   key={g.id}
-                  className="rounded bg-background/60 p-3 shadow-md"
+                  className="rounded-lg bg-background/80 backdrop-blur-sm p-4 shadow-md dark:shadow-none ring-1 ring-border/50 dark:ring-white/5"
                   variants={itemFade}
                 >
-                  <div className="font-medium truncate">{g.title || "Untitled goal"}</div>
+                  <div className="font-medium truncate">
+                    {g.title || "Untitled goal"}
+                  </div>
                   <div className="text-xs opacity-80 mt-1">
                     Target: {g.target_projects} • Deadline: {g.deadline}
                   </div>
-                  <div className="mt-2 max-w-[160px]">
-                    <ProgressBar value={g.steps_progress_percent ?? 0} label="Checklist progress" />
+                  <div className="mt-9 max-w-[160px]">
+                    <ProgressBar
+                      value={g.projects_progress_percent ?? 0}
+                      label="Project progress"
+                    />
                   </div>
                 </motion.div>
               ))}
-            </div>
+          </div>
           )}
         </motion.div>
       </main>
