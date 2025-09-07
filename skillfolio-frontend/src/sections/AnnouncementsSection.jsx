@@ -1,50 +1,102 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import AnnouncementCard from "../components/AnnouncementCard";
 import { fetchAnnouncements } from "../lib/announcements";
+import SectionHeader from "../components/SectionHeader";
+import SearchBar from "../components/SearchBar";
+import Filters from "../components/Filters";
+import { Megaphone } from "lucide-react";
 
-/* ---- Small helper for horizontal scrolling + snap ---- */
+/* Horizontal scroller: centered track + left/right padding so arrows never overlap cards */
 function HorizontalScroller({ children }) {
   const scrollerRef = useRef(null);
 
-  const nudge = (delta) => {
+  // Arrow size + breathing room so cards never sit under buttons
+  const GUTTER = 56; // px
+
+  const nudge = useCallback((dir) => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollBy({ left: delta, behavior: "smooth" });
-  };
+    const page = Math.round(el.clientWidth * 0.9);
+    const atStart = el.scrollLeft <= 1;
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+
+    if (dir > 0) {
+      // right
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" }); // loop to start
+      } else {
+        el.scrollBy({ left: page, behavior: "smooth" });
+      }
+    } else {
+      // left
+      if (atStart) {
+        el.scrollTo({ left: el.scrollWidth, behavior: "smooth" }); // loop to end
+      } else {
+        el.scrollBy({ left: -page, behavior: "smooth" });
+      }
+    }
+  }, []);
 
   return (
-    <div className="-mx-4">
-      <div className="flex items-center gap-2 px-4 mb-2">
-        <button
-          type="button"
-          onClick={() => nudge(-400)}
-          className="px-3 py-1 rounded border border-gray-700 text-sm hover:bg-white/5"
-          aria-label="Scroll left"
-        >
-          ‹
-        </button>
-        <div className="text-xs opacity-70">Scroll</div>
-        <button
-          type="button"
-          onClick={() => nudge(400)}
-          className="px-3 py-1 rounded border border-gray-700 text-sm hover:bg-white/5"
-          aria-label="Scroll right"
-        >
-          ›
-        </button>
-      </div>
+    <div className="relative">
+      {/* Left arrow */}
+      <button
+        type="button"
+        onClick={() => nudge(-1)}
+        aria-label="Scroll left"
+        className="
+          hidden md:grid place-items-center
+          absolute left-2 top-1/2 -translate-y-1/2 z-20
+          w-9 h-9 rounded-full bg-surface/90 ring-1 ring-border/70
+          hover:bg-background/60
+        "
+      >
+        ‹
+      </button>
 
+      {/* Track — side padding equals arrow gutter so arrows never overlap cards */}
       <div
         ref={scrollerRef}
-        className="flex gap-3 overflow-x-auto pb-2 px-4 snap-x snap-mandatory"
-        style={{ scrollSnapType: "x mandatory" }}
+        className="
+          flex gap-3 overflow-x-auto pb-2
+          snap-x snap-mandatory justify-center
+          scrollbar-none no-scrollbar
+        "
+        style={{
+          paddingInline: `${GUTTER}px`,
+          scrollSnapType: "x mandatory",
+          // hide scrollbar on Firefox/IE
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+        }}
+        // hide scrollbar on WebKit
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          el.style.setProperty("--hide-scrollbar", "1");
+        }}
       >
         {children}
       </div>
+
+      {/* Right arrow */}
+      <button
+        type="button"
+        onClick={() => nudge(1)}
+        aria-label="Scroll right"
+        className="
+          hidden md:grid place-items-center
+          absolute right-2 top-1/2 -translate-y-1/2 z-20
+          w-9 h-9 rounded-full bg-surface/90 ring-1 ring-border/70
+          hover:bg-background/60
+        "
+      >
+        ›
+      </button>
     </div>
   );
 }
+
 
 export default function AnnouncementsSection({ onSaveGoal }) {
   const [items, setItems] = useState([]);
@@ -54,10 +106,20 @@ export default function AnnouncementsSection({ onSaveGoal }) {
   // filters
   const [search, setSearch] = useState("");
   const [platform, setPlatform] = useState("all");
-  const [type, setType] = useState("enrollment"); // default to enrollments
-  const [showFilters, setShowFilters] = useState(false);
+  const [type, setType] = useState("all"); // matches Filters default
+  const [ordering, setOrdering] = useState(""); // "", "title", "-title", "discount", "-discount"
+  const [startsAfter, setStartsAfter] = useState(""); // YYYY-MM-DD
+  const [endsBefore, setEndsBefore] = useState(""); // YYYY-MM-DD
 
-  // Debounced refetch when filters/search change
+  const [showFilters, setShowFilters] = useState(false);
+  const appliedCount =
+    (platform !== "all" ? 1 : 0) +
+    (type !== "all" ? 1 : 0) +
+    (ordering ? 1 : 0) +
+    (startsAfter ? 1 : 0) +
+    (endsBefore ? 1 : 0);
+
+  // Debounced fetch
   const debounceRef = useRef(null);
   useEffect(() => {
     let cancelled = false;
@@ -70,7 +132,9 @@ export default function AnnouncementsSection({ onSaveGoal }) {
           search: search || undefined,
           platform: platform !== "all" ? platform : undefined,
           type: type !== "all" ? type : undefined,
-          ordering: "-starts_at",
+          ordering: ordering || "-starts_at",
+          starts_at_after: startsAfter || undefined,
+          ends_at_before: endsBefore || undefined,
         };
         const data = await fetchAnnouncements(params);
         if (!cancelled) setItems(data);
@@ -88,97 +152,107 @@ export default function AnnouncementsSection({ onSaveGoal }) {
       cancelled = true;
       clearTimeout(debounceRef.current);
     };
-  }, [search, platform, type]);
+  }, [search, platform, type, ordering, startsAfter, endsBefore]);
 
   const platforms = useMemo(
     () => ["all", ...Array.from(new Set(items.map((i) => i.platform)))],
     [items]
   );
 
-  const filtered = items;
-
   return (
-    <section className="mx-auto max-w-7xl px-4 py-6 mt-16 md:mt-20">
-      <div className="mb-2">
-        <h2 className="font-heading text-xl">Enrollments & Deals</h2>
-        <p className="text-sm opacity-80 mt-1">
-          Explore the latest enrollments and discounts you might be interested in.
-        </p>
-      </div>
+    <section className="relative z-0  mx-auto max-w-7xl px-4 py-6 mt-20 pt-12">
+      <SectionHeader
+        icon={Megaphone}
+        title="Enrollments & Deals"
+        align="center"
+        className="text-center"
+      />
+      <p className="font-heading text-sm opacity-80 text-center max-w-2xl mx-auto">
+        Explore the latest enrollments and discounts you might be interested in.
+      </p>
 
-      {/* Search row + Filters toggle */}
-      <div className="flex items-center gap-2 mb-2 mt-10">
-        <input
-          className="w-full max-w-2xl rounded p-3 bg-background/60 border border-gray-700"
-          placeholder="Search by title, tag, platform…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Search + Filters toggle */}
+      <div className="flex items-center gap-2 mt-6">
+        <div className="w-full max-w-md mx-auto md:mx-0">
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by title, tag, platform…"
+          />
+        </div>
         <button
           type="button"
-          className="px-3 py-2 rounded border border-gray-700 hover:bg-white/5 text-sm"
+          className="px-3 py-2 rounded ring-1 ring-border/70 hover:bg-background/40 text-sm"
           onClick={() => setShowFilters((v) => !v)}
         >
           Filters ▾
+          {appliedCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-semibold bg-primary/20 text-primary ring-1 ring-primary/30">
+              {appliedCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Filters panel (Platform + Type) */}
+      {/* Filters panel */}
       <AnimatePresence initial={false}>
         {showFilters && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="mb-4 rounded border border-gray-700 bg-background/70 p-3 flex flex-col sm:flex-row gap-3"
           >
-            <div className="flex items-center gap-2">
-              <label className="text-sm opacity-80 w-24">Platform</label>
-              <select
-                className="rounded p-2 bg-background/60 border border-gray-700 text-sm w-44"
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-              >
-                {platforms.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm opacity-80 w-24">Type</label>
-              <select
-                className="rounded p-2 bg-background/60 border border-gray-700 text-sm w-44"
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                <option value="all">all</option>
-                <option value="enrollment">enrollment</option>
-                <option value="discount">discount</option>
-              </select>
-            </div>
+            <Filters
+              type="announcements"
+              value={{
+                platform,
+                type,
+                ordering,
+                starts_at_after: startsAfter,
+                ends_at_before: endsBefore,
+              }}
+              onChange={(patch) => {
+                if (patch.platform !== undefined) setPlatform(patch.platform);
+                if (patch.type !== undefined) setType(patch.type);
+                if (patch.ordering !== undefined) setOrdering(patch.ordering);
+                if (patch.starts_at_after !== undefined)
+                  setStartsAfter(patch.starts_at_after);
+                if (patch.ends_at_before !== undefined)
+                  setEndsBefore(patch.ends_at_before);
+              }}
+              onClear={() => {
+                setPlatform("all");
+                setType("all");
+                setOrdering("");
+                setStartsAfter("");
+                setEndsBefore("");
+              }}
+              layout="row"
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* States */}
+      {/* Breathing room before cards */}
+      <div className="mt-4" />
+
       {loading && <div className="opacity-80">Loading announcements…</div>}
       {err && <div className="text-accent">Error: {err}</div>}
-      {!loading && !err && filtered.length === 0 && (
+
+      {!loading && !err && items.length === 0 && (
         <div className="opacity-80">
-          No announcements right now. Try the platform finder below to search live course platforms.
+          No announcements right now. Try the platform finder below to search
+          live course platforms.
         </div>
       )}
 
-      {/* Horizontal scroller of cards (only rendering mode) */}
-      {!loading && !err && filtered.length > 0 && (
+      {!loading && !err && items.length > 0 && (
         <HorizontalScroller>
-          {filtered.map((item) => (
+          {items.map((item) => (
             <div
               key={item.id}
               className="snap-start shrink-0 w-[280px] sm:w-[320px] md:w-[360px]"
+              style={{ scrollSnapAlign: "start", scrollMarginInline: "16px" }}
             >
               <AnnouncementCard item={item} onSaveGoal={onSaveGoal} />
             </div>
