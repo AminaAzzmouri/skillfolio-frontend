@@ -1,32 +1,32 @@
-name: Frontend Tests
+name: Frontend CI
 
 on:
   push:
-    branches: ['**']
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
   pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'frontend/**'
+
+defaults:
+  run:
+    working-directory: frontend
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./skillfolio-frontend
-
+    permissions:
+      contents: read
+      actions: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Use Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 20
           cache: 'npm'
-          cache-dependency-path: skillfolio-frontend/package-lock.json
-
-      - name: Install
-        run: npm ci
-
-      - name: Test (CI)
-        env:
-          CI: true
-        run: npm run test:ci
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test
