@@ -20,8 +20,9 @@ Skillfolio helps self-learners archive certificates, document projects, and hit 
 - Goals: create, steps/checklist per goal, progress via completed steps and/or completed projects, days-left nudges, local step reordering with persistence
 - Home (for authed users): motivation, rotating “Did you know?” facts, and an Announcements section backed by a small local JSON feed (with “Save as Goal” one-click)
 - Dashboard: live stats (certs/projects), recent items
-- Shared UI: Navbar (desktop + mobile drawer), Modal, ConfirmDialog, ProgressBar, Pagination, SearchBar, Filters, SortSelect, ThemeToggle, Toasts
-- Docs everywhere (/docs/*) so contributors know how each piece works
+- Shared UI: NNavbar (desktop + mobile drawer), Modal, ConfirmDialog, ProgressBar, Pagination, SearchBar, Filters, SortSelect, ThemeToggle, Toasts
+- FlashBanner, Loading, EmptyState
+- Forms: Field, FormShell, Inputs (TextInput, NumberInput, DateInput, Select, TextArea)
 
 ---
 
@@ -45,6 +46,7 @@ src/
   App.jsx (routing + HomeGate + guards)
 public/
   announcements.json (static feed for enrollments & deals)
+  favicon.ico (custom icon for Navbar & browser tab)
 tailwind.config.js (colors via CSS vars, dark mode = class)
 
 - Auth flow: Zustand keeps { user, access, refresh }, writes to localStorage, and re-applies the Authorization header on reload via restoreUser().
@@ -121,8 +123,15 @@ While the backend API for public promotions/enrollments is being scoped, we ship
   * Forms: CertificateForm, ProjectForm (guided fields & description preview), GoalForm (create & edit, initialDraft)
   * Components: Pagination, ProgressBar, ConfirmDialog, Navbar (auth states), etc.
 
-- Run tests: npm test
-(If you’re using Vitest: npx vitest; with Jest: npm test—both work with RTL.)
+- Scripts:
+    - `npm run test` → runs vitest in CI mode
+    - `npm run test:ui` → runs vitest with UI for local development
+    - `npm run coverage` → runs with coverage report
+
+- CI:
+    - GitHub Actions workflow updated to use `npm run test:ci`
+    - Includes React Testing Library, msw (mock service worker), and whatwg-fetch
+
 
 ## 🧰 Setup (clone & run locally)
 
@@ -230,6 +239,10 @@ Edit public/announcements.json to try the announcements flow quickly.
 - Week 2: JWT auth; restore session; Certificates & Projects live API; dashboard data; .env and axios refactor
 
 - Later: Goals & steps with reordering; Projects & Certificates polish; Home with Announcements feed; shared UI primitives; dark/light theme with CSS vars; broad documentation across pages/components/store
+
+- Recent: Added FlashBanner, Field/FormShell/Inputs form components, favicon, updated test infrastructure (Vitest + msw + whatwg-fetch), GitHub Actions test workflow improvements
+
+--- 
 
 ## 🙌 Credits & License
 
