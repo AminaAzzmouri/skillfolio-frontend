@@ -8,7 +8,7 @@ export default function LandingPage() {
       {/* HERO / INTRO */}
       <section className="relative overflow-hidden">
         {/* soft background flare */}
-        <div className="pointer-events-none absolute inset-0 -z-10 opacity-60">
+        <div className="pointer-events-none absolute inset-0 -z-10 opacity-60" aria-hidden>
           <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full blur-3xl bg-primary/20" />
           <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full blur-3xl bg-secondary/20" />
         </div>
