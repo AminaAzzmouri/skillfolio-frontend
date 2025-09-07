@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children }) {
   const bootstrapped = useAppStore((s) => s.bootstrapped);
 
   // Wait until we've attempted to restore the session
-  if (!bootstrapped) return <div className="min-h-screen flex items-center justify-center text-text bg-background">Loading…</div>;
+  if (!bootstrapped) return <div className="min-h-screen flex items-center justify-center text-text bg-background font-heading">Loading…</div>;
 
   // Not logged in? Kick to /login
   if (!user) return <Navigate to="/login" replace />;
