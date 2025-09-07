@@ -21,8 +21,13 @@ export default function ProgressBar({
   const pct = Math.max(0, Math.min(100, Number(value) || 0));
 
   return (
-    <div className="w-full">
-      {label ? <div className="text-xs mb-1 opacity-80">{label}</div> : null}
+    <div className="w-full max-w-[220px]">
+      {(label || showNumber) && (
+        <div className="flex items-center justify-between text-xs mb-1 opacity-80">
+          {label ? <span className="font-heading">{label}</span> : <span />}
+          {showNumber && <span className="font-medium opacity-90">{pct}%</span>}
+        </div>
+      )}
       <div
         className={`w-full rounded overflow-hidden ${trackClassName}`}
         style={{ height }}
@@ -37,7 +42,6 @@ export default function ProgressBar({
           aria-hidden="true"
         />
       </div>
-      {showNumber ? <div className="text-xs mt-1 opacity-80">{pct}%</div> : null}
     </div>
   );
 }
