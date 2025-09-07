@@ -45,6 +45,17 @@ const rid = () =>
     : Math.random().toString(36).slice(0, 10));
 
 export const useAppStore = create((set, get) => ({
+  
+  // --- Flash banners (global) ---
+  // shape: { type: "success"|"error", message: string, projectId?|certificateId?|goalId?, ts: number
+  flash: null,
+  setFlash(payload) {
+    set({ flash: { ...payload, ts: Date.now() } });
+  },
+  clearFlash() {
+    set({ flash: null });
+  },
+
   // -----------------------
   // Certificates (LIVE API)
   // -----------------------
@@ -72,34 +83,83 @@ export const useAppStore = create((set, get) => ({
         err?.message ??
         "Failed to fetch certificates";
       set({ certificatesLoading: false, certificatesError: msg });
+      get().setFlash({ type: "error", message: msg });
     }
   },
 
   async createCertificate({ title, issuer, date_earned, file }) {
-    set({ certificatesError: null });
+  set({ certificatesError: null });
+  try {
     const created = await createCertificateMultipart({ title, issuer, date_earned, file });
     // Prepend for snappy UX
     set((s) => ({ certificates: [created, ...s.certificates] }));
     // Optional optimistic bump
     set((s) => ({ certificatesMeta: { count: (s.certificatesMeta?.count ?? 0) + 1 } }));
+    // Flash banner + focus
+    get().setFlash({
+      type: "success",
+      message: "Certificate successfully added",
+      certificateId: created.id,
+    });
     return created;
-  },
+  } catch (err) {
+    const msg =
+      err?.response?.data?.detail ??
+      (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+      err?.message ??
+      "Failed to add certificate";
+    set({ certificatesError: msg });
+    get().setFlash({ type: "error", message: msg });
+    throw err;
+  }
+},
 
-  async updateCertificate(id, patch) {
+async updateCertificate(id, patch) {
+  try {
     const updated = await apiUpdateCertificate(id, patch);
     set((s) => ({
       certificates: (s.certificates ?? []).map((c) => (c.id === id ? updated : c)),
     }));
+    get().setFlash({
+      type: "success",
+      message: "Certificate successfully updated",
+      certificateId: updated.id,
+    });
     return updated;
-  },
+  } catch (err) {
+    const msg =
+      err?.response?.data?.detail ??
+      (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+      err?.message ??
+      "Failed to update certificate";
+    set({ certificatesError: msg });
+    get().setFlash({ type: "error", message: msg });
+    throw err;
+  }
+},
 
-  async deleteCertificate(id) {
+async deleteCertificate(id) {
+  try {
     await apiDeleteCertificate(id);
     set((s) => ({
       certificates: (s.certificates ?? []).filter((c) => c.id !== id),
       certificatesMeta: { count: Math.max(0, (s.certificatesMeta?.count ?? 1) - 1) },
     }));
-  },
+    get().setFlash({
+      type: "success",
+      message: "Certificate successfully deleted",
+    });
+  } catch (err) {
+    const msg =
+      err?.response?.data?.detail ??
+      (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+      err?.message ??
+      "Failed to delete certificate";
+    set({ certificatesError: msg });
+    get().setFlash({ type: "error", message: msg });
+    throw err;
+  }
+},
 
   // -----------------------
   // Projects (LIVE API)
@@ -129,7 +189,7 @@ export const useAppStore = create((set, get) => ({
       set({ projectsLoading: false, projectsError: msg });
     }
   },
-
+  
   async createProject({
     title,
     description,
@@ -142,43 +202,98 @@ export const useAppStore = create((set, get) => ({
     skills_used = null,
     outcome_short = null,
     skills_to_improve = null,
-  }) {
-    set({ projectsError: null });
+    start_date,   // "YYYY-MM-DD"
+    end_date,     // only when status === "completed"
+    }) {
+      set({ projectsError: null });
+      
+      const payload = {
+        title,
+        description,
+        certificate: certificateId || null,
+        status,
+        work_type,
+        duration_text,
+        primary_goal,
+        challenges_short,
+        skills_used,
+        outcome_short,
+        skills_to_improve,
+        start_date,
+        ...(status === "completed" && end_date ? { end_date } : {}),
+      };
+      try {
+        const created = await apiCreateProject(payload);
+        set((s) => ({ projects: [created, ...s.projects] }));
+        set((s) => ({ projectsMeta: { count: (s.projectsMeta?.count ?? 0) + 1 } }));
 
-    const payload = {
-      title,
-      description,
-      certificate: certificateId || null,
-      status,
-      work_type,
-      duration_text,
-      primary_goal,
-      challenges_short,
-      skills_used,
-      outcome_short,
-      skills_to_improve,
-    };
-
-    const created = await apiCreateProject(payload);
-    set((s) => ({ projects: [created, ...s.projects] }));
-    set((s) => ({ projectsMeta: { count: (s.projectsMeta?.count ?? 0) + 1 } }));
-    return created;
-  },
-
+        get().setFlash({
+          type: "success",
+          message: "Project successfully added",
+          projectId: created.id,
+        });
+        return created;
+      } catch (err) {
+        const msg =
+          err?.response?.data?.detail ??
+          (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+          err?.message ??
+          "Failed to add project";
+        set({ projectsError: msg });
+        get().setFlash({ type: "error", message: msg });
+        throw err;
+      }
+    },
+    
   async updateProject(id, patch) {
-    const updated = await apiUpdateProject(id, patch);
-    set((s) => ({
-      projects: (s.projects ?? []).map((p) => (p.id === id ? updated : p)),
-    }));
-    return updated;
+    try {
+      const updated = await apiUpdateProject(id, patch);
+      set((s) => ({
+        projects: (s.projects ?? []).map((p) => (p.id === id ? updated : p)),
+      }));
+      
+      get().setFlash({
+        type: "success",
+        message: "Project successfully updated",
+        projectId: updated.id,
+      });
+      
+      return updated;
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to update project";
+      set({ projectsError: msg });
+      get().setFlash({ type: "error", message: msg });
+      throw err;
+    }
   },
 
   async deleteProject(id) {
-    await apiDeleteProject(id);
-    set((s) => ({
-      projects: (s.projects ?? []).filter((p) => p.id !== id),
-      projectsMeta: { count: Math.max(0, (s.projectsMeta?.count ?? 1) - 1) },
-    }));
+    try {
+      await apiDeleteProject(id);
+      set((s) => ({
+        projects: (s.projects ?? []).filter((p) => p.id !== id),
+        projectsMeta: { count: Math.max(0, (s.projectsMeta?.count ?? 1) - 1) }
+      }));
+      // NEW: banner only (no focus)
+      get().setFlash({
+        type: "success",
+        message: "Project successfully deleted",
+      });
+
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to delete project";
+      set({ projectsError: msg });
+      get().setFlash({ type: "error", message: msg });
+      throw err;
+    }
   },
 
   // -----------------------
@@ -210,31 +325,99 @@ export const useAppStore = create((set, get) => ({
    * Create Goal — accepts:
    * - title
    * - target_projects
+   * -completed_projects
    * - deadline
    * - total_steps (seeded from initial steps builder)
    * - completed_steps (usually 0 on create)
    */
-  async createGoal({ title, target_projects, deadline, total_steps = 0, completed_steps = 0 }) {
+  async fetchGoals(params) {
+    set({ goalsLoading: true, goalsError: null });
+    try {
+      const data = await listGoals(params);
+      const items = Array.isArray(data) ? data : data?.results || [];
+      set({ goals: items, goalsLoading: false });
+      // If paginated later, also set goalsMeta.count the same way as above
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to fetch goals";
+      set({ goalsLoading: false, goalsError: msg });
+      get().setFlash({ type: "error", message: msg });
+    }
+  },
+
+  async createGoal({ title, target_projects, completed_projects = 0, deadline, total_steps = 0, completed_steps = 0 }) {
     set({ goalsError: null });
-    const created = await apiCreateGoal({ title, target_projects, deadline, total_steps, completed_steps });
-    set((s) => ({ goals: [created, ...s.goals] }));
-    return created;
+    try {
+      const created = await apiCreateGoal({ title, target_projects, completed_projects, deadline, total_steps, completed_steps });
+      set((s) => ({ goals: [created, ...s.goals] }));
+      get().setFlash({
+        type: "success",
+        message: "Goal successfully added",
+        goalId: created.id,
+      });
+      return created;
+      
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to add goal";
+      set({ goalsError: msg });
+      get().setFlash({ type: "error", message: msg });
+      throw err;
+    }
   },
 
   async updateGoal(id, patch) {
-    const updated = await apiUpdateGoal(id, patch);
-    set((s) => ({
-      goals: (s.goals ?? []).map((g) => (g.id === id ? updated : g)),
-    }));
-    return updated;
+    try {
+      const updated = await apiUpdateGoal(id, patch);
+      set((s) => ({
+        goals: (s.goals ?? []).map((g) => (g.id === id ? updated : g)),
+      }));
+      get().setFlash({
+        type: "success",
+        message: "Goal successfully updated",
+        goalId: updated.id,
+      });
+      return updated;
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to update goal";
+      set({ goalsError: msg });
+      get().setFlash({ type: "error", message: msg });
+      throw err;
+    }
   },
 
   async deleteGoal(id) {
-    await apiDeleteGoal(id);
-    set((s) => ({
-      goals: (s.goals ?? []).filter((g) => g.id !== id),
-    }));
+    try {
+      await apiDeleteGoal(id);
+      set((s) => ({
+        goals: (s.goals ?? []).filter((g) => g.id !== id),
+      }));
+      get().setFlash({
+        type: "success",
+        message: "Goal successfully deleted",
+      });
+    } catch (err) {
+      const msg =
+        err?.response?.data?.detail ??
+        (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ??
+        err?.message ??
+        "Failed to delete goal";
+      set({ goalsError: msg });
+      get().setFlash({ type: "error", message: msg });
+      throw err;
+    }
   },
+
 
   // -----------------------
   // Profile (LIVE API)
