@@ -1,16 +1,14 @@
 import { useEffect, useId, useState } from "react";
+import FormShell from "./FormShell";
+import Field from "./Field";
+import { TextInput } from "./Inputs";
 
 /**
- * ProfileForm
- * - Edit user identity (username/email)
- * - Change password
- * - Delete account (guarded)
- *
  * Props:
  *  - initial: { username, email }
- *  - submitting?: boolean (for the main Save button)
+ *  - submitting?: boolean
  *  - error?: string
- *  - onUpdate: (payload, { full?: boolean }) => Promise  // PUT when full=true; else PATCH
+ *  - onUpdate: (payload, { full?: boolean }) => Promise
  *  - onChangePassword: ({ current_password, new_password }) => Promise
  *  - onDelete: () => Promise
  */
@@ -53,12 +51,14 @@ export default function ProfileForm({
           username: (form.username ?? "").trim(),
           email: (form.email ?? "").trim(),
         },
-        { full: false } // PATCH
+        { full: false }
       );
     } catch (err) {
       setLocalErr(
         err?.response?.data?.detail ||
-          (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ||
+          (typeof err?.response?.data === "object"
+            ? JSON.stringify(err.response.data)
+            : err?.response?.data) ||
           err?.message ||
           "Failed to update profile"
       );
@@ -73,12 +73,14 @@ export default function ProfileForm({
           username: (form.username ?? "").trim(),
           email: (form.email ?? "").trim(),
         },
-        { full: true } // PUT
+        { full: true }
       );
     } catch (err) {
       setLocalErr(
         err?.response?.data?.detail ||
-          (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ||
+          (typeof err?.response?.data === "object"
+            ? JSON.stringify(err.response.data)
+            : err?.response?.data) ||
           err?.message ||
           "Failed to replace profile"
       );
@@ -89,13 +91,18 @@ export default function ProfileForm({
     setPwBusy(true);
     setPwMsg("");
     try {
-      await onChangePassword({ current_password: pw.current, new_password: pw.next });
+      await onChangePassword({
+        current_password: pw.current,
+        new_password: pw.next,
+      });
       setPwMsg("Password updated.");
       setPw({ current: "", next: "" });
     } catch (err) {
       setPwMsg(
         err?.response?.data?.detail ||
-          (typeof err?.response?.data === "object" ? JSON.stringify(err.response.data) : err?.response?.data) ||
+          (typeof err?.response?.data === "object"
+            ? JSON.stringify(err.response.data)
+            : err?.response?.data) ||
           err?.message ||
           "Failed to change password"
       );
@@ -108,122 +115,124 @@ export default function ProfileForm({
     if (confirmDelete !== "DELETE") return;
     setDelBusy(true);
     try {
-      await onDelete(); // caller should redirect to /login
+      await onDelete();
     } finally {
       setDelBusy(false);
     }
   };
 
   return (
-    <form onSubmit={handleSavePatch} className="grid gap-8">
-      {/* Account info */}
-      <section className="rounded border border-gray-700 bg-background/70 p-4">
-        <h2 className="font-semibold mb-3">Update account</h2>
-        <div className="grid gap-3">
-          <label className="text-sm" htmlFor={uId}>
-            <div className="opacity-80 mb-1">Username</div>
-            <input
-              id={uId}
-              className="w-full rounded p-2 bg-background/60 border border-gray-700"
-              value={form.username}
-              onChange={(e) => onChange({ username: e.target.value })}
-              required
-            />
-          </label>
-
-          <label className="text-sm" htmlFor={eId}>
-            <div className="opacity-80 mb-1">Email</div>
-            <input
-              id={eId}
-              className="w-full rounded p-2 bg-background/60 border border-gray-700"
-              value={form.email}
-              onChange={(e) => onChange({ email: e.target.value })}
-              required
-            />
-          </label>
-
-          {!!(error || localErr) && <p className="text-sm text-accent">{error || localErr}</p>}
-
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              className="rounded px-3 py-2 bg-primary hover:bg-primary/80 disabled:opacity-60"
-              disabled={submitting}
-              title="PATCH username/email"
-            >
-              {submitting ? "Saving…" : "Save changes"}
-            </button>
-            <button
-              type="button"
-              className="rounded px-3 py-2 border border-gray-600 hover:bg-white/5"
-              onClick={handleSavePut}
-              disabled={submitting}
-              title="PUT username+email (full replace)"
-            >
-              Save (PUT)
-            </button>
-          </div>
+    <form onSubmit={handleSavePatch} className="grid gap-6">
+      {/* Inline error (from parent) */}
+      {!!(error || localErr) && (
+        <div className="rounded border p-3 text-sm border-red-900 bg-red-950/30 text-red-200">
+          {error || localErr}
         </div>
-      </section>
+      )}
 
-      {/* Password */}
-      <section className="rounded border border-gray-700 bg-background/70 p-4">
-        <h2 className="font-semibold mb-3">Change password</h2>
-        <div className="grid gap-3">
-          <label className="text-sm" htmlFor={cpId}>
-            <div className="opacity-80 mb-1">Current password</div>
-            <input
-              id={cpId}
-              type="password"
-              className="w-full rounded p-2 bg-background/60 border border-gray-700"
-              value={pw.current}
-              onChange={(e) => setPw((x) => ({ ...x, current: e.target.value }))}
-            />
-          </label>
-          <label className="text-sm" htmlFor={npId}>
-            <div className="opacity-80 mb-1">New password</div>
-            <input
-              id={npId}
-              type="password"
-              className="w-full rounded p-2 bg-background/60 border border-gray-700"
-              value={pw.next}
-              onChange={(e) => setPw((x) => ({ ...x, next: e.target.value }))}
-            />
-          </label>
-          {pwMsg && <p className="text-sm opacity-80">{pwMsg}</p>}
+      {/* Account info */}
+      <FormShell title="Update account">
+        <Field label="Username" htmlFor={uId}>
+          <TextInput
+            id={uId}
+            value={form.username}
+            onChange={(e) => onChange({ username: e.target.value })}
+            required
+          />
+        </Field>
+
+        <Field label="Email" htmlFor={eId}>
+          <TextInput
+            id={eId}
+            type="email"
+            value={form.email}
+            onChange={(e) => onChange({ email: e.target.value })}
+            required
+          />
+        </Field>
+
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={submitting}
+            title="PATCH username/email"
+          >
+            {submitting ? "Saving…" : "Save changes"}
+          </button>
           <button
             type="button"
-            className="rounded px-3 py-2 bg-primary hover:bg-primary/80 disabled:opacity-60"
-            onClick={handleChangePassword}
-            disabled={pwBusy || !pw.current || !pw.next}
+            className="btn btn-outline"
+            onClick={handleSavePut}
+            disabled={submitting}
+            title="PUT username+email (full replace)"
           >
-            {pwBusy ? "Updating…" : "Update password"}
+            Save (PUT)
           </button>
         </div>
-      </section>
+      </FormShell>
+
+      {/* Password */}
+      <FormShell title="Change password">
+        <Field label="Current password" htmlFor={cpId}>
+          <TextInput
+            id={cpId}
+            type="password"
+            value={pw.current}
+            onChange={(e) => setPw((x) => ({ ...x, current: e.target.value }))}
+          />
+        </Field>
+
+        <Field label="New password" htmlFor={npId}>
+          <TextInput
+            id={npId}
+            type="password"
+            value={pw.next}
+            onChange={(e) => setPw((x) => ({ ...x, next: e.target.value }))}
+          />
+        </Field>
+
+        {pwMsg && <p className="text-sm opacity-80">{pwMsg}</p>}
+
+        <button
+          type="button"
+          className="btn btn-primary"
+          onClick={handleChangePassword}
+          disabled={pwBusy || !pw.current || !pw.next}
+        >
+          {pwBusy ? "Updating…" : "Update password"}
+        </button>
+      </FormShell>
 
       {/* Danger zone */}
-      <section className="rounded border border-red-900 bg-red-950/20 p-4">
-        <h2 className="font-semibold mb-3 text-red-300">Danger zone</h2>
-        <p className="text-sm opacity-80 mb-3">
+      <FormShell
+        title="Danger zone"
+        className="ring-red-300/60 bg-red-50/60 dark:bg-red-950/20 dark:ring-red-900/60"
+      >
+        <p className="text-sm opacity-80">
           Type <span className="font-mono">DELETE</span> to confirm.
         </p>
+
         <div className="flex items-center gap-2">
-          <input
-            className="w-44 rounded p-2 bg-background/60 border border-gray-700"
+          <TextInput
+            className="w-44"
             value={confirmDelete}
             onChange={(e) => setConfirmDelete(e.target.value)}
           />
           <button
             type="button"
-            className="rounded px-3 py-2 bg-accent text-black hover:bg-accent/80 disabled:opacity-60"
+            className={`btn ${
+              confirmDelete === "DELETE" && !delBusy
+                ? "btn-danger"
+                : "btn-ghost cursor-not-allowed"
+            }`}
             disabled={confirmDelete !== "DELETE" || delBusy}
             onClick={handleDelete}
           >
             {delBusy ? "Deleting…" : "Delete account"}
           </button>
         </div>
-      </section>
+      </FormShell>
     </form>
   );
 }
