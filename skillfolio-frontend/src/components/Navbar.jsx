@@ -1,4 +1,5 @@
 /* Docs: see components/Navbar.jsx.md */
+import brandMark from "../assets/skillfolio-logo.png";
 
 import { useEffect, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -39,25 +40,33 @@ export default function Navbar() {
     transition: { type: "spring", stiffness: 400, damping: 30 },
   };
 
-  // Shared colorful-hover classes
+  // Shared styles so items have SAME height/spacing + brand font
+  const itemBase =
+    "inline-flex items-center font-heading text-base h-10 px-3 rounded transition-colors";
   const colorfulHover =
-    "rounded transition-colors hover:bg-gradient-to-r hover:from-primary/30 hover:to-secondary/30";
+    "hover:bg-gradient-to-r hover:from-primary/30 hover:to-secondary/30";
 
   return (
-    <header className="sticky top-0 z-40 bg-surface/95 backdrop-blur border-b border-border shadow-sm">
-      <div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-        <Link to="/" className="font-heading text-lg">
-          Skillfolio
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border shadow-md dark:shadow-lg">
+      <div className="mx-auto max-w-7xl px-4 py-2 flex items-center justify-between">
+        <Link
+          to="/"
+          className="font-heading text-lg flex items-center tracking-tight"
+        >
+          <img
+            src={brandMark}
+            alt="Skillfolio logo"
+            className="h-12 w-12"
+            draggable="false"
+          />
+          <span className="ml-1">Skillfolio</span>
         </Link>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-3">
           {navLinks.map((n) => (
             <motion.div key={n.to} {...hoverAnim}>
-              <Link
-                to={n.to}
-                className={`px-3 py-1 ${colorfulHover}`}
-              >
+              <Link to={n.to} className={`${itemBase} ${colorfulHover}`}>
                 {n.label}
               </Link>
             </motion.div>
@@ -65,21 +74,21 @@ export default function Navbar() {
 
           {user ? (
             <>
-              {/* Profile chip: icon + name; all clickable */}
-              <motion.div className="ml-2" {...hoverAnim}>
+              {/* Profile chip */}
+              <motion.div {...hoverAnim}>
                 <Link
                   to="/profile"
                   title="Open profile"
-                  className={`inline-flex items-center gap-1 px-3 py-1 text-sm opacity-90 underline-offset-2 ${colorfulHover}`}
+                  className={`${itemBase} ${colorfulHover} underline-offset-2`}
                 >
-                  <User size={16} className="opacity-90" />
-                  <span>{displayName}</span>
+                  <User size={16} className="opacity-90 mr-1" />
+                  <span className="truncate max-w-[14ch]">{displayName}</span>
                 </Link>
               </motion.div>
 
               <motion.button
                 type="button"
-                className={`btn btn-outline ml-1 ${colorfulHover}`}
+                className={`${itemBase} ring-1 ring-border ${colorfulHover}`}
                 onClick={logout}
                 {...hoverAnim}
               >
@@ -89,27 +98,35 @@ export default function Navbar() {
           ) : (
             <>
               <motion.div {...hoverAnim}>
-                <Link className={`btn btn-primary ml-2 ${colorfulHover}`} to="/login">
+                <Link
+                  className={`${itemBase} bg-primary text-white hover:bg-primary/90`}
+                  to="/login"
+                >
                   Login
                 </Link>
               </motion.div>
               <motion.div {...hoverAnim}>
-                <Link className={`btn btn-outline ${colorfulHover}`} to="/register">
+                <Link
+                  className={`${itemBase} ring-1 ring-border ${colorfulHover}`}
+                  to="/register"
+                >
                   Register
                 </Link>
               </motion.div>
             </>
           )}
 
-          {/* Theme toggle with the same hover/scale treatment */}
-          <motion.div {...hoverAnim} className={`p-1 ${colorfulHover}`}>
-            <ThemeToggle />
+          {/* Theme toggle with matching hover + spacing */}
+          <motion.div {...hoverAnim}>
+            <div className={`${itemBase} ${colorfulHover} ring-1 ring-border`}>
+              <ThemeToggle className="w-full h-full flex items-center justify-center" />
+            </div>
           </motion.div>
         </nav>
 
         {/* Mobile hamburger */}
         <button
-          className="md:hidden inline-flex items-center justify-center rounded border border-border px-3 py-2"
+          className="md:hidden inline-flex items-center justify-center rounded ring-1 ring-border h-10 px-3"
           aria-label="Open menu"
           aria-expanded={open}
           onClick={() => setOpen(true)}
@@ -143,7 +160,7 @@ export default function Navbar() {
               <div className="flex items-center justify-between mb-4">
                 <span className="font-heading text-lg">Menu</span>
                 <button
-                  className="rounded border border-border px-2 py-1"
+                  className="rounded ring-1 ring-border h-9 px-3"
                   onClick={() => setOpen(false)}
                   aria-label="Close menu"
                 >
@@ -156,7 +173,7 @@ export default function Navbar() {
                   <motion.div key={n.to} {...hoverAnim}>
                     <Link
                       to={n.to}
-                      className={`rounded px-3 py-2 hover:bg-background/40 ${colorfulHover}`}
+                      className={`${itemBase} ${colorfulHover}`}
                     >
                       {n.label}
                     </Link>
@@ -165,8 +182,10 @@ export default function Navbar() {
               </nav>
 
               <div className="mt-6 border-t border-border pt-4 flex flex-col gap-2">
-                <motion.div {...hoverAnim} className={`self-start p-1 ${colorfulHover}`}>
-                  <ThemeToggle />
+                <motion.div {...hoverAnim} className="self-start">
+                  <div className={`${itemBase} ${colorfulHover} ring-1 ring-border`}>
+                    <ThemeToggle className="w-full h-full flex items-center justify-center" />
+                  </div>
                 </motion.div>
 
                 {user ? (
@@ -174,16 +193,16 @@ export default function Navbar() {
                     <motion.div {...hoverAnim}>
                       <Link
                         to="/profile"
-                        className={`inline-flex items-center gap-1 text-sm opacity-90 truncate underline-offset-2 px-3 py-2 ${colorfulHover}`}
+                        className={`${itemBase} ${colorfulHover} underline-offset-2 truncate`}
                         title="Open profile"
                       >
-                        <User size={16} className="opacity-90" />
+                        <User size={16} className="opacity-90 mr-1" />
                         <span className="truncate">{displayName}</span>
                       </Link>
                     </motion.div>
 
                     <motion.button
-                      className={`btn btn-outline text-left ${colorfulHover}`}
+                      className={`${itemBase} ring-1 ring-border text-left ${colorfulHover}`}
                       onClick={logout}
                       {...hoverAnim}
                     >
@@ -193,12 +212,18 @@ export default function Navbar() {
                 ) : (
                   <>
                     <motion.div {...hoverAnim}>
-                      <Link className={`btn btn-primary ${colorfulHover}`} to="/login">
+                      <Link
+                        className={`${itemBase} bg-primary text-white hover:bg-primary/90`}
+                        to="/login"
+                      >
                         Login
                       </Link>
                     </motion.div>
                     <motion.div {...hoverAnim}>
-                      <Link className={`btn btn-outline ${colorfulHover}`} to="/register">
+                      <Link
+                        className={`${itemBase} ring-1 ring-border ${colorfulHover}`}
+                        to="/register"
+                      >
                         Register
                       </Link>
                     </motion.div>
