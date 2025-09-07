@@ -1,9 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../lib/api";
+import SectionHeader from "../components/SectionHeader";
+import SearchBar from "../components/SearchBar";
+import Filters from "../components/Filters";
+import ActionButton from "../components/ActionButton";
+import { Search } from "lucide-react";
+import Pagination from "../components/Pagination";
 
-const COST_OPTIONS = ["any", "free", "freemium", "subscription", "paid", "mixed"];
-const PAGE_SIZE = 5;
+const COST_OPTIONS = [
+  "any",
+  "free",
+  "freemium",
+  "subscription",
+  "paid",
+  "mixed",
+];
+const PAGE_SIZE = 6;
 
 export default function PlatformDiscoverySection({ onSaveGoal }) {
   const [q, setQ] = useState("");
@@ -14,10 +27,13 @@ export default function PlatformDiscoverySection({ onSaveGoal }) {
   // filters
   const [showFilters, setShowFilters] = useState(false);
   const [cost, setCost] = useState("any");
-  const [certs, setCerts] = useState("any"); // any | yes | no
+  const [certs, setCerts] = useState("any");
+  const [ordering, setOrdering] = useState(""); // "", "name", "-name"
 
   // pagination
   const [page, setPage] = useState(1);
+  const appliedCount =
+    (cost !== "any" ? 1 : 0) + (certs !== "any" ? 1 : 0) + (ordering ? 1 : 0);
 
   // fetch platforms (debounced)
   useEffect(() => {
@@ -37,92 +53,100 @@ export default function PlatformDiscoverySection({ onSaveGoal }) {
         if (!cancelled) setLoading(false);
       }
     }, 300);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [q, cost, certs]);
 
-  // client-side filtering (name/category contains); cost/certs handled server-side above
   const filtered = useMemo(() => {
     const needle = (q || "").trim().toLowerCase();
-    let list = items;
+    let list = [...items];
     if (needle) {
-      list = list.filter(p =>
-        (p.name || "").toLowerCase().includes(needle) ||
-        (p.category || "").toLowerCase().includes(needle)
+      list = list.filter(
+        (p) =>
+          (p.name || "").toLowerCase().includes(needle) ||
+          (p.category || "").toLowerCase().includes(needle)
       );
     }
+    if (ordering === "name") {
+      list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else if (ordering === "-name") {
+      list.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
+    }
     return list;
-  }, [items, q]);
+  }, [items, q, ordering]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageSafe = Math.min(Math.max(1, page), pageCount);
-  const pageSlice = filtered.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+  const pageSlice = filtered.slice(
+    (pageSafe - 1) * PAGE_SIZE,
+    pageSafe * PAGE_SIZE
+  );
 
-  // reset to page 1 when filters/search change
-  useEffect(() => { setPage(1); }, [q, cost, certs, items.length]);
+  useEffect(() => {
+    setPage(1);
+  }, [q, cost, certs, ordering, items.length]);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 mt-5 md:mt-10">
-      <div className="mb-3">
-        <h2 className="font-heading text-xl">Find where to learn it</h2>
-        <p className="text-sm opacity-80 mt-1">
-          Type what you want to learn — we’ll link you to platform search pages.
-        </p>
-        <p className="text-xs opacity-70 mt-10">
-          Tip: the box also filters platform names/categories (e.g., “data”, “coursera”).
-        </p>
-      </div>
+    <section className="relative z-0 mx-auto max-w-7xl px-4 py-10 mt-20">
+      <SectionHeader
+        icon={Search}
+        title="Find where to learn it"
+        align="center"
+        className="text-center"
+      />
+      <p className="text-sm opacity-80 text-center max-w-2xl mx-auto font-heading">
+        Type what you want to learn — we’ll link you to platform search pages.
+      </p>
 
       {/* Search + Filters toggle */}
-      <div className="flex items-center gap-2">
-        <input
-          className="w-full max-w-2xl rounded p-3 bg-background/60 border border-gray-700"
-          placeholder="e.g., machine learning, react, Excel"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
+      <div className="flex items-center gap-2 mt-6">
+        <div className="w-full max-w-md">
+          <SearchBar
+            value={q}
+            onChange={setQ}
+            placeholder="e.g., machine learning, react, Excel"
+          />
+        </div>
         <button
           type="button"
-          className="px-3 py-2 rounded border border-gray-700 hover:bg-white/5 text-sm"
+          className="px-3 py-2 rounded ring-1 ring-border/70 hover:bg-background/40 text-sm"
           onClick={() => setShowFilters((v) => !v)}
         >
           Filters ▾
+          {appliedCount > 0 && (
+            <span className="ml-2 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full text-xs font-semibold bg-primary/20 text-primary ring-1 ring-primary/30">
+              {appliedCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Filter panel (compact) */}
+      {/* Filters drawer */}
       <AnimatePresence initial={false}>
         {showFilters && (
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            className="mt-2 rounded border border-gray-700 bg-background/70 p-3 flex flex-col sm:flex-row gap-3"
+            className="mt-2"
           >
-            <div className="flex items-center gap-2">
-              <label className="text-sm opacity-80 w-24">Cost</label>
-              <select
-                className="rounded p-2 bg-background/60 border border-gray-700 text-sm"
-                value={cost}
-                onChange={(e) => setCost(e.target.value)}
-              >
-                {COST_OPTIONS.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="text-sm opacity-80 w-24">Certificates</label>
-              <select
-                className="rounded p-2 bg-background/60 border border-gray-700 text-sm"
-                value={certs}
-                onChange={(e) => setCerts(e.target.value)}
-              >
-                <option value="any">any</option>
-                <option value="yes">yes</option>
-                <option value="no">no</option>
-              </select>
-            </div>
+            <Filters
+              type="platforms"
+              value={{ cost, certs, ordering }}
+              onChange={(patch) => {
+                if (patch.cost !== undefined) setCost(patch.cost);
+                if (patch.certs !== undefined) setCerts(patch.certs);
+                if (patch.ordering !== undefined) setOrdering(patch.ordering);
+              }}
+              onClear={() => {
+                setCost("any");
+                setCerts("any");
+                setOrdering("");
+              }}
+              layout="row"
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -135,74 +159,100 @@ export default function PlatformDiscoverySection({ onSaveGoal }) {
         {pageSlice.map((p) => (
           <motion.div
             key={p.name}
-            className="rounded border border-gray-700 bg-background/70 p-4 flex flex-col"
+            className="
+              relative rounded-xl bg-surface p-4
+              ring-1 ring-border/60 shadow-soft hover:shadow-brand
+              dark:bg-background/70 dark:ring-white/10
+              flex flex-col
+            "
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <div className="font-semibold">{p.name}</div>
-            {p.category && <div className="text-xs opacity-70">{p.category}</div>}
-            {p.description && <div className="text-sm opacity-80 mt-1">{p.description}</div>}
+            {/* Header row: title + subtitle (left) and tags (right) */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="font-heading font-semibold text-base leading-tight truncate">
+                  {p.name}
+                </div>
+                {p.category && (
+                  <div className="font-heading text-xs inline-block opacity-70 truncate">
+                    {p.category}
+                  </div>
+                )}
+              </div>
 
-            {/* Badges */}
-            <div className="mt-2 flex flex-wrap gap-1">
-              {p.cost_model && (
-                <span className="text-xs rounded px-2 py-0.5 border border-gray-700/80">
-                  {p.cost_model}
+              {/* Tags inline on the right */}
+              <div className="flex flex-wrap items-start gap-1 mt-1 shrink-0">
+                {p.cost_model && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full ring-1 ring-border/70 bg-background/60">
+                    {p.cost_model}
+                  </span>
+                )}
+                <span className="text-[10px] px-2 py-0.5 rounded-full ring-1 ring-border/70 bg-background/60">
+                  {p.offers_certificates ? "Certificates" : "No certs"}
                 </span>
-              )}
-              <span className="text-xs rounded px-2 py-0.5 border border-gray-700/80">
-                {p.offers_certificates ? "Certificates" : "No certificates"}
-              </span>
+              </div>
             </div>
 
-            <div className="mt-3 flex gap-2">
-              <button
-                className="rounded px-3 py-2 bg-secondary hover:bg-secondary/80 text-black text-sm"
-                onClick={() => onSaveGoal?.({
-                  name: p.name,
-                  title: `Explore ${p.name} and pick a course`,
-                })}
-              >
-                Add to bucket list
-              </button>
-              <a
-                className="rounded px-3 py-2 border border-gray-700 hover:bg-white/5 text-sm"
-                href={p.home}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Visit site
-              </a>
+            {/* Description: lower down, left-aligned */}
+            {p.description && (
+              <div className="mt-6 mb-4 text-sm opacity-80 text-left">
+                {p.description}
+              </div>
+            )}
+
+            {/* Footer actions pinned to bottom */}
+            <div className="mt-auto flex items-center gap-6 pt-3">
+              {p.home ? (
+                <div className="flex flex-col items-center">
+                  <ActionButton
+                    as="a"
+                    href={p.home}
+                    target="_blank"
+                    rel="noreferrer"
+                    icon="external"
+                    title="Visit site"
+                    shape="circle"
+                  />
+                  <span className="font-heading text-xs inline-block mt-1 opacity-70">
+                    Visit
+                  </span>
+                </div>
+              ) : null}
+
+              <div className="flex flex-col items-center">
+                <ActionButton
+                  icon="plus"
+                  title="Add to bucket list"
+                  shape="circle"
+                  onClick={() =>
+                    onSaveGoal?.({
+                      name: p.name,
+                      title: `Explore ${p.name} and pick a course`,
+                    })
+                  }
+                />
+                <span className="font-heading text-xs inline-block mt-1 opacity-70">
+                  Bucket
+                </span>
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Pagination */}
+      {/* Pagination (shared component) */}
       {pageCount > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <button
-            className="px-3 py-1 rounded border border-gray-700 hover:bg-white/5 text-sm disabled:opacity-50"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={pageSafe === 1}
-          >
-            Prev
-          </button>
-          <div className="text-sm opacity-80">
-            Page {pageSafe} / {pageCount}
-          </div>
-          <button
-            className="px-3 py-1 rounded border border-gray-700 hover:bg-white/5 text-sm disabled:opacity-50"
-            onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-            disabled={pageSafe === pageCount}
-          >
-            Next
-          </button>
+        <div className="mt-4 flex items-center justify-center">
+          <Pagination
+            page={pageSafe}
+            pageSize={PAGE_SIZE}
+            total={filtered.length}
+            loading={loading}
+            onPageChange={(n) => setPage(n)}
+          />
         </div>
       )}
     </section>
   );
 }
-
-
-
