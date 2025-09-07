@@ -1,96 +1,176 @@
 /* Docs: see docs/index.css.md */
 
+/* Google Fonts: Outfit (heading) + Inter (body) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer components {
+  /* Section headers */
+  .section-title {
+    @apply font-heading font-semibold text-2xl md:text-3xl leading-tight;
+  }
+  .section-subtitle {
+    @apply font-heading text-sm md:text-base opacity-80;
+  }
+
+  /* Card typography */
+  .card-title {
+    @apply font-heading font-semibold text-base leading-tight;
+  }
+  .card-subtitle {
+    @apply font-heading text-xs inline-block opacity-70;
+  }
+
+  /* Badges + tiny captions */
+  .badge-xs {
+    @apply text-[10px] px-2 py-0.5 rounded-full ring-1 ring-border/70 bg-background/60;
+  }
+  .caption-xs {
+    @apply font-heading text-xs inline-block opacity-70;
+  }
+
+  /* Form labels + form help text (optional but neat) */
+  .form-label {
+    @apply font-heading text-sm opacity-90;
+  }
+  .form-help {
+    @apply font-heading tchext-xs opacity-70;
+  }
+}
+
+/* Utility: fully hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge */
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE + Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+
+
+
 
 /* 
   Theme tokens (RGB so we can use Tailwind's /opacity utilities)
   Light is the default; .dark overrides live below.
 */
 :root {
-  /* Creative Light theme */
-  --color-background: 250 250 249; /* zinc-50 (warm paper) */
-  --color-surface: 255 255 255;     /* white */
-  --color-text: 17 24 39;           /* slate-900 */
-  --color-muted: 87 96 111;         /* custom muted (between slate-500/600) */
-  --color-border: 229 231 235;      /* gray-200 */
+  /* Creative Light theme — softer beige background */
+  --color-background: 249 245 235; /* warm light beige (#F9F5EB) */
+  --color-surface: 255 255 253; /* off-white paper (#FFFDFA) */
+  --color-text: 28 25 23; /* stone-900 (#1C1917) */
+  --color-muted: 87 96 111; /* slate-muted (good contrast) */
+  --color-border: 229 231 235; /* gray-200 */
 
   /* Brand */
-  --color-primary: 99 102 241;      /* indigo-500  #6366F1 */
-  --color-secondary: 6 182 212;     /* cyan-500    #06B6D4 */
-  --color-accent: 245 158 11;       /* amber-500   #F59E0B */
+  --color-primary: 99 102 241; /* indigo-500  #6366F1 */
+  --color-secondary: 6 182 212; /* cyan-500    #06B6D4 */
+  --color-accent: 245 158 11; /* amber-500   #F59E0B */
 }
 
 .dark {
   /* Dark theme */
-  --color-background: 15 23 42;     /* slate-900 #0F172A */
-  --color-surface: 17 24 39;        /* slate-900-ish */
-  --color-text: 241 245 249;        /* slate-100 */
-  --color-muted: 148 163 184;       /* slate-400 */
-  --color-border: 71 85 105;        /* slate-600 */
+  --color-background: 15 23 42; /* slate-900 #0F172A */
+  --color-surface: 17 24 39; /* slate-900-ish */
+  --color-text: 241 245 249; /* slate-100 */
+  --color-muted: 148 163 184; /* slate-400 */
+  --color-border: 71 85 105; /* slate-600 */
 
   /* Brand (kept the same for consistency) */
-  --color-primary: 14 165 233;      /* sky-500 */
-  --color-secondary: 34 197 94;     /* green-500 */
-  --color-accent: 234 179 8;        /* amber-500 */
+  --color-primary: 14 165 233; /* sky-500 */
+  --color-secondary: 34 197 94; /* green-500 */
+  --color-accent: 234 179 8; /* amber-500 */
 }
 
 @layer base {
-  html, body, #root { height: 100%; }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
   body {
     @apply bg-background text-text;
-    font-family: 'Roboto', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    /* Body font = Inter */
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+      Cantarell, Noto Sans, Helvetica Neue, Arial, "Apple Color Emoji",
+      "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    /* Optional: nicer numerals for stats */
+    font-feature-settings: "tnum" 1, "lnum" 1;
   }
 
-  /* Better default look for links */
-  a { @apply hover:opacity-90 transition; }
+  a {
+    @apply hover:opacity-90 transition;
+  }
 }
 
 /* Small helpers */
 .btn {
   @apply inline-flex items-center justify-center rounded font-semibold px-4 py-2 transition disabled:opacity-60;
 }
-.btn-primary { @apply bg-primary hover:bg-primary/90 text-white; }
-.btn-secondary { @apply bg-secondary hover:bg-secondary/90 text-white; }
-.btn-outline { @apply border border-border hover:bg-surface/60; }
-
+.btn-primary {
+  @apply bg-primary hover:bg-primary/90 text-white;
+}
+.btn-secondary {
+  @apply bg-secondary hover:bg-secondary/90 text-white;
+}
+.btn-outline {
+  @apply border border-border hover:bg-surface/60;
+}
 
 /* --- Animated stat helpers --- */
 @keyframes gradient-move {
-  0% { background-position: 0% 50%; }
-  100% { background-position: 100% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
 }
 @keyframes stripes-move {
-  0% { background-position: 0 0; }
-  100% { background-position: 40px 0; }
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 0;
+  }
 }
 @keyframes shine-pulse {
-  0%,100% { opacity: 0.25; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.02); }
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.02);
+  }
 }
 
 @layer utilities {
   /* Soft animated gradient background (uses your theme tokens) */
   .bg-animated {
-    background-image:
-      linear-gradient(90deg,
-        rgba(var(--color-primary) / 0.14),
-        rgba(var(--color-secondary) / 0.14),
-        rgba(var(--color-accent) / 0.14)
-      );
+    background-image: linear-gradient(
+      90deg,
+      rgba(var(--color-primary) / 0.14),
+      rgba(var(--color-secondary) / 0.14),
+      rgba(var(--color-accent) / 0.14)
+    );
     background-size: 200% 200%;
     animation: gradient-move 6s linear infinite;
   }
 
   /* Subtle moving stripes (for progress tracks or headers) */
   .bg-stripes {
-    background-image:
-      repeating-linear-gradient(
-        45deg,
-        rgba(var(--color-primary) / 0.12) 0 20px,
-        transparent 20px 40px
-      );
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(var(--color-primary) / 0.12) 0 20px,
+      transparent 20px 40px
+    );
     background-size: 40px 40px;
     animation: stripes-move 12s linear infinite;
   }
@@ -105,9 +185,35 @@
     inset: -1px;
     border-radius: inherit;
     pointer-events: none;
-    background:
-      radial-gradient(120px 60px at 10% -20%, rgba(var(--color-primary) / 0.25), transparent 70%),
-      radial-gradient(120px 60px at 90% 120%, rgba(var(--color-secondary) / 0.25), transparent 70%);
+    background: radial-gradient(
+        120px 60px at 10% -20%,
+        rgba(var(--color-primary) / 0.25),
+        transparent 70%
+      ),
+      radial-gradient(
+        120px 60px at 90% 120%,
+        rgba(var(--color-secondary) / 0.25),
+        transparent 70%
+      );
     animation: shine-pulse 2.5s ease-in-out infinite;
   }
+}
+
+/* --- Unified button system extensions --- */
+.btn-danger {
+  @apply bg-red-500 hover:bg-red-600 text-white;
+}
+
+.btn-ghost {
+  @apply ring-1 ring-border/60 hover:bg-background/40;
+  /* dark stays subtle */
+}
+
+.btn-muted {
+  @apply bg-surface hover:bg-surface/80;
+}
+
+/* (Optional) common widths */
+.btn-block {
+  @apply w-full;
 }
