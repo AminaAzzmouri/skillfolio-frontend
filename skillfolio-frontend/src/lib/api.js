@@ -3,6 +3,7 @@ import axios from "axios";
 
 // Read base URL from env (fallback to localhost for dev)
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+console.log('API_BASE at runtime:', import.meta.env.VITE_API_BASE_URL);
 
 export const api = axios.create({
   baseURL: BASE_URL,
